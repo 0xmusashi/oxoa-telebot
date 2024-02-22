@@ -32,21 +32,41 @@ function logLevelMap(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
 }
 
 function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
+    const NO_CODE_PRICE = 0.04;
+    const CODE_20_PRICE = 0.032;
+    const CODE_100_PRICE = 0;
+
     let numberKeySold = 0;
     let refSet = new Set();
+
+    let numNoCodeKeySold = 0;
+    let numCode20KeySold = 0;
+    let numCode100KeySold = 0;
+
     levelContent.forEach((txs, user) => {
         if (txs.length > 0) {
             for (let i = 0; i < txs.length; i++) {
-                const [numNodes, _, from] = txNodesBuyMap.get(txs[i]);
+                const [numNodes, txValue, from] = txNodesBuyMap.get(txs[i]);
                 refSet.add(from);
                 numberKeySold += numNodes;
+
+                if (txValue == NO_CODE_PRICE * numNodes) {
+                    numNoCodeKeySold += numNodes;
+                } else if (txValue == CODE_20_PRICE * numNodes) {
+                    numCode20KeySold += numNodes;
+                } else if (txValue == CODE_100_PRICE * numNodes) {
+                    numCode100KeySold += numNodes;
+                }
             }
         }
     });
     let numberRef = refSet.size;
     let s = ``;
     if (numberRef > 0) {
-        s = `🔗 L${parseInt(level) + 1}: ${refSet.size} ref - ${numberKeySold} 🔑\n`;
+        s += `🔗 L${parseInt(level) + 1}: ${refSet.size} ref - ${numberKeySold} keys\n\n`;
+        s += `      No code: ${numNoCodeKeySold} 🔑 (${numNoCodeKeySold * NO_CODE_PRICE} $ETH)\n`;
+        s += `      20% code: ${numCode20KeySold} 🗝 (${numCode20KeySold * CODE_20_PRICE} $ETH)\n`;
+        s += `      100% code: ${numCode100KeySold} 🆓\n\n`;
     }
     return s;
 }
@@ -73,6 +93,12 @@ refCountMap = {
 
 txNodesBuyMap = {
     'txHash': [numberNodeSold, ETH pay, msg.sender]
+}
+
+saleMapNoCode = {
+    '0x4890240240...': 10,
+    '0x3213234242...': 10,
+    ...
 }
 */
 

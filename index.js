@@ -29,7 +29,6 @@ class Tree {
         this.refCountMap = new Map();
         this.txNodesBuyMap = new Map();
         this.saleMap = new Map();
-        this.levelSaleMap = new Map();
     }
 
     async preorderTraversal(node = this.root, level = 0) {
@@ -97,7 +96,8 @@ class Tree {
                 const numberOfNodes = args['_numberOfNodes'].toNumber();
 
                 let tx = await provider.getTransaction(txHash);
-                let txValue = ethers.utils.formatUnits(tx.value).toString();;
+                let txValue = parseFloat(ethers.utils.formatUnits(tx.value).toString());
+
                 this.txNodesBuyMap.set(txHash, [numberOfNodes, txValue, tx.from]);
 
                 let child = new Node(owner);
