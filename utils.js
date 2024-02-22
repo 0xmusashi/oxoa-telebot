@@ -5,7 +5,7 @@ function formatAddress(address) {
 function logLevelMap(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
     let s1 = ``;
     if (level > 0) {
-        s1 = `🔗 L${level}:\n`;
+        s1 = `🔗 Level ${level}:\n`;
     }
     let s2 = '';
     function logTxsMap(txs, user) {
@@ -64,9 +64,9 @@ function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
     let s = ``;
     if (numberRef > 0) {
         s += `🔗 L${parseInt(level) + 1}: ${refSet.size} ref - ${numberKeySold} keys\n\n`;
-        s += `      No code: ${numNoCodeKeySold} 🔑 (${numNoCodeKeySold * NO_CODE_PRICE} $ETH)\n`;
-        s += `      20% code: ${numCode20KeySold} 🗝 (${numCode20KeySold * CODE_20_PRICE} $ETH)\n`;
-        s += `      100% code: ${numCode100KeySold} 🆓\n\n`;
+        s += `      0%: ${numNoCodeKeySold} 🔑 (${numNoCodeKeySold * NO_CODE_PRICE} $ETH)\n`;
+        s += `      20%: ${numCode20KeySold} 🗝 (${numCode20KeySold * CODE_20_PRICE} $ETH)\n`;
+        s += `      100%: ${numCode100KeySold} 🆓\n\n`;
     }
     return s;
 }
