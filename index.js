@@ -2,6 +2,7 @@ const ethers = require("ethers");
 const abi = require("./abi.json");
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
+const { formatAddress, logLevelMap, logGeneral } = require('./utils');
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 
@@ -28,6 +29,7 @@ class Tree {
         this.refCountMap = new Map();
         this.txNodesBuyMap = new Map();
         this.saleMap = new Map();
+        this.levelSaleMap = new Map();
     }
 
     async preorderTraversal(node = this.root, level = 0) {
@@ -89,10 +91,15 @@ class Tree {
             // let totalETH = ethers.BigNumber.from('0');
             for (const event of events) {
                 const args = event.args;
-                txHashes.push(event.transactionHash);
+                const txHash = event.transactionHash;
+                txHashes.push(txHash);
                 const owner = args['_owner'];
                 const numberOfNodes = args['_numberOfNodes'].toNumber();
-                this.txNodesBuyMap.set(event.transactionHash, numberOfNodes);
+
+                let tx = await provider.getTransaction(txHash);
+                let txValue = ethers.utils.formatUnits(tx.value).toString();;
+                this.txNodesBuyMap.set(txHash, [numberOfNodes, txValue, tx.from]);
+
                 let child = new Node(owner);
                 if (!ownersSet.has(owner)) {
                     ownersSet.add(owner);
@@ -142,57 +149,6 @@ function logMapElements(value, key, map) {
     console.log(`${key} sold ${value} ${s}`);
 }
 
-/*
-levelMap = { 
-    '0': {
-        '0x4890240240...': [txs],
-        '0x3213234242...': [txs],
-        ...
-    },
-    '1': {
-
-    }
-}
-
-refCountMap = {
-    '0x4890240240...': 32,
-    '0x3213234242...': 10,
-    ...
-}
-*/
-
-function formatAddress(address) {
-    return address.slice(0, 4) + '...' + address.slice(-3);
-}
-
-function logLevelMap(values, key, refCountMap, txNodesBuyMap, saleMap) {
-    let s1 = ``;
-    if (key > 0) {
-        s1 = `📌 Level ${key} list:\n`;
-    }
-    let s2 = '';
-    function logTxsMap(txs, user) {
-        let s3 = '';
-        let numberRef = refCountMap.get(user);
-        let userUrl = `https://explorer.zksync.io/address/${user}`;
-        s3 = s3.concat(`👨 User <a href='${userUrl}'>${formatAddress(user)}</a> sold ${saleMap.get(user)} 🔑 & has ${numberRef} direct ref\n\n`);
-        if (numberRef > 0) {
-            s3 = s3.concat(`Buy Txs:\n`);
-            if (txs.length > 0) {
-                for (let i = 0; i < txs.length; i++) {
-                    s3 = s3.concat(`🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${txNodesBuyMap.get(txs[i])} 🔑</a>\n`);
-                }
-            }
-            s3 = s3.concat(`\n`);
-        }
-        return s3;
-    }
-    values.forEach((txs, user) => {
-        s2 += logTxsMap(txs, user);
-    });
-    return s1 + s2;
-}
-
 async function main(inputAddress) {
     console.log(`Referrals of ${inputAddress}`);
     const root = new Node(inputAddress);
@@ -202,9 +158,34 @@ async function main(inputAddress) {
     return tree;
 }
 
-// getNewNodeEvents(REF_ADDRESS);
-// main(REF_ADDRESS);
 bot.onText(/\/ref (.+)/, async (msg, match) => {
+    const address = match[1];
+    try {
+        const tree = await main(address);
+        const levelMap = tree.levelMap;
+        const refCountMap = tree.refCountMap;
+        const txNodesBuyMap = tree.txNodesBuyMap;
+        const saleMap = tree.saleMap;
+
+        const userUrl = `https://explorer.zksync.io/address/${address}`;
+        let message = `👨 <a href='${userUrl}'>${formatAddress(address)}</a> General Ref Info\n\n`;
+        levelMap.forEach((values, key) => {
+            message += logGeneral(values, key, refCountMap, txNodesBuyMap, saleMap);
+        });
+
+        const opts = {
+            parse_mode: 'HTML',
+        }
+
+        await bot.sendMessage(msg.chat.id, message, opts);
+    } catch (error) {
+        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
+        console.log(`err: ${error}`)
+    }
+});
+
+
+bot.onText(/\/all (.+)/, async (msg, match) => {
     const address = match[1];
     try {
         const tree = await main(address);
@@ -219,6 +200,35 @@ bot.onText(/\/ref (.+)/, async (msg, match) => {
         levelMap.forEach((values, key) => {
             message += logLevelMap(values, key, refCountMap, txNodesBuyMap, saleMap);
         });
+
+        const opts = {
+            parse_mode: 'HTML',
+        }
+
+        await bot.sendMessage(msg.chat.id, message, opts);
+    } catch (error) {
+        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
+        console.log(`err: ${error}`)
+    }
+});
+
+bot.onText(/\/level (.+) (.+)/, async (msg, match) => {
+    const address = match[1];
+    const level = match[2];
+    try {
+        const tree = await main(address);
+        const levelMap = tree.levelMap;
+        const refCountMap = tree.refCountMap;
+        const txNodesBuyMap = tree.txNodesBuyMap;
+        const saleMap = tree.saleMap;
+
+        let message = '';
+        if (!levelMap.has(level)) {
+            message += `User has 0️⃣ level ${level} ref`;
+        } else {
+            let levelContent = levelMap.get(level);
+            message += logLevelMap(levelContent, level, refCountMap, txNodesBuyMap, saleMap);
+        }
 
         const opts = {
             parse_mode: 'HTML',
