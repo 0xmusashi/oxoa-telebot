@@ -63,10 +63,13 @@ function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
     let numberRef = refSet.size;
     let s = ``;
     if (numberRef > 0) {
-        s += `🔗 L${parseInt(level) + 1}: ${refSet.size} ref - ${numberKeySold} keys\n\n`;
-        s += `      0%: ${numNoCodeKeySold} 🔑 (${numNoCodeKeySold * NO_CODE_PRICE} $ETH)\n`;
-        s += `      20%: ${numCode20KeySold} 🗝 (${numCode20KeySold * CODE_20_PRICE} $ETH)\n`;
-        s += `      100%: ${numCode100KeySold} 🆓\n\n`;
+        let nocodeSale = numNoCodeKeySold * NO_CODE_PRICE;
+        let code20Sale = numCode20KeySold * CODE_20_PRICE;
+        let totalSale = (nocodeSale + code20Sale).toFixed(3);
+        s += `🔗 L${parseInt(level) + 1}: ${refSet.size} ref - ${numberKeySold} keys - Total sale: ${totalSale} $ETH\n\n`;
+        s += `      0%   :   ${numNoCodeKeySold} 🔑 (${nocodeSale.toFixed(3)} $ETH)\n`;
+        s += `      20%  :   ${numCode20KeySold} 🗝 (${code20Sale.toFixed(3)} $ETH)\n`;
+        s += `      100% :   ${numCode100KeySold} 🆓\n\n`;
     }
     return s;
 }
