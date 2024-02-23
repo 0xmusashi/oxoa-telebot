@@ -1,12 +1,13 @@
 const NO_CODE_PRICE = 0.04;
 const CODE_20_PRICE = 0.032;
-const CODE_100_PRICE = 0;
+const CODE_100_PRICE = 0.0004;
+const TXS_PER_PAGE = 20;
 
 function formatAddress(address) {
     return address.slice(0, 4) + '...' + address.slice(-3);
 }
 
-function splitArrayWithOffset(arr, size, offset = 1) {
+function splitArrayWithOffset(arr, size, offset = 0) {
     if (!Array.isArray(arr) || size <= 0 || offset < 0) {
         throw new Error('Invalid arguments: array, size, and offset must be valid.');
     }
@@ -48,7 +49,7 @@ function logLevelMap(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
                 } else if (ethValue == CODE_20_PRICE * numNodes) {
                     k = `🗝`;
                 } else if (ethValue == CODE_100_PRICE * numNodes) {
-                    k = `🆓`;
+                    k = `🎁`;
                 }
                 s3 = s3.concat(`\t\t\t\t\t🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${numNodes} ${k} (${ethValue} $ETH)</a>\n`);
             }
@@ -62,8 +63,96 @@ function logLevelMap(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
     return s1 + s2;
 }
 
-function logPage(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
+function logPage(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page = 1) {
+    let s2 = '';
+    let allLogs = [];
+    function logTxsMap(txs, user) {
+        let logs = [];
+        let numberRef = refCountMap.get(user);
+        if (numberRef > 0 && txs.length > 0) {
+            for (let i = 0; i < txs.length; i++) {
+                const [numNodes, ethValue, _] = txNodesBuyMap.get(txs[i]);
+                let k = `🔑`;
+                if (ethValue == NO_CODE_PRICE * numNodes) {
+                    k = `🔑`;
+                } else if (ethValue == CODE_20_PRICE * numNodes) {
+                    k = `🗝`;
+                } else if (ethValue == CODE_100_PRICE * numNodes) {
+                    k = `🎁`;
+                }
+                logs.push(`\t\t\t\t\t🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${numNodes} ${k} (${ethValue} $ETH)</a>\n`);
+            }
+        }
+        return logs;
+    }
 
+    levelContent.forEach((txs, user) => {
+        let logs = logTxsMap(txs, user);
+        allLogs = [...allLogs, ...logs];
+    });
+
+    const splitLogs = splitArrayWithOffset(allLogs, TXS_PER_PAGE);
+
+    if (page > splitLogs.length) {
+        s2 += `No more tx\n`;
+    } else {
+        const dipslayText = splitLogs[page - 1];
+        for (const text of dipslayText) {
+            s2 += text;
+        }
+    }
+
+    return s2;
+}
+
+function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page = 1) {
+    let s2 = '';
+    let allLogs = [];
+    function logTxsMap(txs, user) {
+        let logs = [];
+        let numberRef = refCountMap.get(user);
+        if (numberRef > 0 && txs.length > 0) {
+            for (let i = 0; i < txs.length; i++) {
+                const [numNodes, ethValue, _] = txNodesBuyMap.get(txs[i]);
+                let k = `🔑`;
+                let code = '0';
+                if (ethValue == NO_CODE_PRICE * numNodes) {
+                    k = `🔑`;
+                    code = '0';
+                } else if (ethValue == CODE_20_PRICE * numNodes) {
+                    k = `🗝`;
+                    code = '20';
+                } else if (ethValue == CODE_100_PRICE * numNodes) {
+                    k = `🎁`;
+                    code = '100';
+                }
+                let log = `\t\t\t\t\t🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${numNodes} ${k} (${ethValue} $ETH)</a>\n\n`;
+
+                if (code == refCode) {
+                    logs.push(log);
+                }
+            }
+        }
+        return logs;
+    }
+
+    levelContent.forEach((txs, user) => {
+        let logs = logTxsMap(txs, user);
+        allLogs = [...allLogs, ...logs];
+    });
+
+    const splitLogs = splitArrayWithOffset(allLogs, TXS_PER_PAGE);
+
+    if (page > splitLogs.length) {
+        s2 += `No more tx\n`;
+    } else {
+        const dipslayText = splitLogs[page - 1];
+        for (const text of dipslayText) {
+            s2 += text;
+        }
+    }
+
+    return s2;
 }
 
 function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
@@ -97,11 +186,12 @@ function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
     if (numberRef > 0) {
         let nocodeSale = numNoCodeKeySold * NO_CODE_PRICE;
         let code20Sale = numCode20KeySold * CODE_20_PRICE;
-        let totalSale = (nocodeSale + code20Sale).toFixed(3);
+        let code100Sale = numCode100KeySold * CODE_100_PRICE;
+        let totalSale = (nocodeSale + code20Sale + code100Sale).toFixed(3);
         s += `🔗 L${parseInt(level) + 1}: ${refSet.size} ref - ${numberKeySold} keys - Total sale: ${totalSale} $ETH\n\n`;
         s += `      0%     :   ${numNoCodeKeySold} 🔑 (${nocodeSale.toFixed(3)} $ETH)\n`;
         s += `      20%   :   ${numCode20KeySold} 🗝 (${code20Sale.toFixed(3)} $ETH)\n`;
-        s += `      100% :   ${numCode100KeySold} 🆓\n\n`;
+        s += `      100% :   ${numCode100KeySold} 🎁\n\n`;
     }
     return s;
 }
@@ -137,4 +227,4 @@ saleMapNoCode = {
 }
 */
 
-module.exports = { formatAddress, logLevelMap, logGeneral };
+module.exports = { formatAddress, logLevelMap, logGeneral, logPage, logPageCodeType };

@@ -2,7 +2,7 @@ const ethers = require("ethers");
 const abi = require("./abi.json");
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
-const { formatAddress, logLevelMap, logGeneral } = require('./utils');
+const { formatAddress, logLevelMap, logGeneral, logPage, logPageCodeType } = require('./utils');
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 
@@ -153,7 +153,12 @@ async function main(inputAddress) {
     console.log(`Referrals of ${inputAddress}`);
     const root = new Node(inputAddress);
     const tree = new Tree(root);
-    await tree.preorderTraversal();
+    try {
+        await tree.preorderTraversal();
+    } catch (error) {
+        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
+        console.log(`err: ${error}`);
+    }
 
     return tree;
 }
@@ -228,6 +233,82 @@ bot.onText(/\/level (.+) (.+)/, async (msg, match) => {
         } else {
             let levelContent = levelMap.get(level);
             message += logLevelMap(levelContent, level, refCountMap, txNodesBuyMap, saleMap);
+        }
+
+        const opts = {
+            parse_mode: 'HTML',
+        }
+
+        await bot.sendMessage(msg.chat.id, message, opts);
+    } catch (error) {
+        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
+        console.log(`err: ${error}`)
+    }
+});
+
+bot.onText(/\/directRef (.+) (.+)/, async (msg, match) => {
+    const address = match[1];
+    const page = match[2];
+    const level = '0';
+    try {
+        const tree = await main(address);
+        const levelMap = tree.levelMap;
+        const refCountMap = tree.refCountMap;
+        const txNodesBuyMap = tree.txNodesBuyMap;
+        const saleMap = tree.saleMap;
+
+        let message = '';
+        if (!levelMap.has(level)) {
+            message += `User has 0️⃣ direct ref. Try again later!`;
+        } else {
+            let levelContent = levelMap.get(level);
+            message += `🔗 Level ${level} (page ${page}):\n`;
+
+            let numberRef = refCountMap.get(address);
+            let userUrl = `https://explorer.zksync.io/address/${address}`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${saleMap.get(address)} 🔑 & ${numberRef} direct ref\n`;
+            message += `\t\t\t\tBuy Txs:\n`;
+
+            message += logPage(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page);
+        }
+
+        const opts = {
+            parse_mode: 'HTML',
+        }
+
+        await bot.sendMessage(msg.chat.id, message, opts);
+    } catch (error) {
+        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
+        console.log(`err: ${error}`)
+    }
+});
+
+bot.onText(/\/lv0 (.+) (.+) (.+)/, async (msg, match) => {
+    const address = match[1];
+    const refCode = match[2];
+    const page = match[3];
+    const level = '0';
+    try {
+        const tree = await main(address);
+        const levelMap = tree.levelMap;
+        const refCountMap = tree.refCountMap;
+        const txNodesBuyMap = tree.txNodesBuyMap;
+        const saleMap = tree.saleMap;
+
+        let message = '';
+        if (!levelMap.has(level)) {
+            message += `User has 0️⃣ direct ref. Try again later!`;
+        } else {
+            let levelContent = levelMap.get(level);
+
+            let numberRef = refCountMap.get(address);
+            let userUrl = `https://explorer.zksync.io/address/${address}`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${saleMap.get(address)} 🔑 & ${numberRef} direct ref\n\n`;
+            message += `🔗 Direct ref - ${refCode}% discount sale - (page ${page}):\n\n`;
+
+            message += `\t\t\t\t🏷Sale transactions:\n\n`;
+
+            message += logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
         }
 
         const opts = {
