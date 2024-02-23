@@ -301,14 +301,16 @@ bot.onText(/\/lv0 (.+) (.+) (.+)/, async (msg, match) => {
         } else {
             let levelContent = levelMap.get(level);
 
+            const [s, numPages] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+
             let numberRef = refCountMap.get(address);
             let userUrl = `https://explorer.zksync.io/address/${address}`;
             message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${saleMap.get(address)} 🔑 & ${numberRef} direct ref\n\n`;
-            message += `🔗 Direct ref - ${refCode}% discount sale - (page ${page}):\n\n`;
+            message += `🔗 Direct ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
 
-            message += logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+            message += s;
         }
 
         const opts = {

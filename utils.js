@@ -143,7 +143,8 @@ function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, sale
 
     const splitLogs = splitArrayWithOffset(allLogs, TXS_PER_PAGE);
 
-    if (page > splitLogs.length) {
+    let numPages = splitLogs.length;
+    if (page > numPages) {
         s2 += `No more tx\n`;
     } else {
         const dipslayText = splitLogs[page - 1];
@@ -152,7 +153,7 @@ function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, sale
         }
     }
 
-    return s2;
+    return [s2, numPages];
 }
 
 function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
