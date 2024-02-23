@@ -224,7 +224,7 @@ bot.onText(/\/level (.+) (.+)/, async (msg, match) => {
 
         let message = '';
         if (!levelMap.has(level)) {
-            message += `User has 0️⃣ level ${level} ref`;
+            message += `User has 0️⃣ level ${level} ref. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
             message += logLevelMap(levelContent, level, refCountMap, txNodesBuyMap, saleMap);

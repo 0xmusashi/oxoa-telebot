@@ -1,5 +1,29 @@
+const NO_CODE_PRICE = 0.04;
+const CODE_20_PRICE = 0.032;
+const CODE_100_PRICE = 0;
+
 function formatAddress(address) {
     return address.slice(0, 4) + '...' + address.slice(-3);
+}
+
+function splitArrayWithOffset(arr, size, offset = 1) {
+    if (!Array.isArray(arr) || size <= 0 || offset < 0) {
+        throw new Error('Invalid arguments: array, size, and offset must be valid.');
+    }
+
+    const subarrays = [];
+    let startIndex = 0;
+
+    while (startIndex < arr.length) {
+        const endIndex = Math.min(startIndex + size - offset, arr.length);
+        const subarray = arr.slice(startIndex, endIndex);
+        if (subarray.length > 0) {
+            subarrays.push(subarray);
+        }
+        startIndex = endIndex;
+    }
+
+    return subarrays;
 }
 
 function logLevelMap(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
@@ -12,14 +36,21 @@ function logLevelMap(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
         let s3 = '';
         let numberRef = refCountMap.get(user);
         let userUrl = `https://explorer.zksync.io/address/${user}`;
-        s3 = s3.concat(`👨 <a href='${userUrl}'>${formatAddress(user)}</a> sold ${saleMap.get(user)} 🔑 & ${numberRef} direct ref\n\n`);
-        if (numberRef > 0) {
-            s3 = s3.concat(`\t\tBuy Txs:\n`);
-            if (txs.length > 0) {
-                for (let i = 0; i < txs.length; i++) {
-                    const [numNodes, ethValue, _] = txNodesBuyMap.get(txs[i]);
-                    s3 = s3.concat(`\t\t\t🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${numNodes} 🔑 (${ethValue} $ETH)</a>\n`);
+
+        s3 = s3.concat(`👨 <a href='${userUrl}'>${formatAddress(user)}</a> sold ${saleMap.get(user)} 🔑 & ${numberRef} direct ref\n`);
+        if (numberRef > 0 && txs.length > 0) {
+            s3 = s3.concat(`\t\t\t\tBuy Txs:\n`);
+            for (let i = 0; i < txs.length; i++) {
+                const [numNodes, ethValue, _] = txNodesBuyMap.get(txs[i]);
+                let k = `🔑`;
+                if (ethValue == NO_CODE_PRICE * numNodes) {
+                    k = `🔑`;
+                } else if (ethValue == CODE_20_PRICE * numNodes) {
+                    k = `🗝`;
+                } else if (ethValue == CODE_100_PRICE * numNodes) {
+                    k = `🆓`;
                 }
+                s3 = s3.concat(`\t\t\t\t\t🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${numNodes} ${k} (${ethValue} $ETH)</a>\n`);
             }
             s3 = s3.concat(`\n`);
         }
@@ -31,10 +62,11 @@ function logLevelMap(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
     return s1 + s2;
 }
 
+function logPage(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
+
+}
+
 function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
-    const NO_CODE_PRICE = 0.04;
-    const CODE_20_PRICE = 0.032;
-    const CODE_100_PRICE = 0;
 
     let numberKeySold = 0;
     let refSet = new Set();
