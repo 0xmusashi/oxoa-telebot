@@ -120,7 +120,6 @@ function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, sale
         let oxoaPercentage = 5;
 
         if (numberRef > 0 && txs.length > 0) {
-            let nsbFlag17PercentFlag = false;
             for (let i = 0; i < txs.length; i++) {
                 const [numNodes, ethValue, _] = txNodesBuyMap.get(txs[i]);
                 let k = `🔑`;
@@ -136,20 +135,16 @@ function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, sale
                     code = '100';
                 }
 
-                if (txs[i].toLowerCase() == LAST_5_TX) {
-                    nsbFlag17PercentFlag = true;
-                }
-
-                if (nsbFlag17PercentFlag) {
-                    oxoaPercentage = 17;
-                }
-
                 const oxoaReward = (ethValue * oxoaPercentage / 100).toFixed(4);
                 const bonusReward = 0;
                 let log = `\t\t\t\t\t🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${numNodes} ${k} (${parseFloat(ethValue)} $ETH) | Reward ${oxoaPercentage}% (${parseFloat(oxoaReward)} $ETH) | Bonus reward (${parseFloat(bonusReward)} $ETH)</a>\n`;
 
                 if (code == refCode) {
                     logs.push(log);
+                }
+
+                if (txs[i].toLowerCase() == LAST_5_TX) {
+                    oxoaPercentage = 17;
                 }
             }
         }
