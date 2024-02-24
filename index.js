@@ -3,7 +3,7 @@ const abi = require("./abi.json");
 const kolList = require("./kolList.json");
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
-const { formatAddress, logLevelMap, logGeneral, logPage, logPageCodeType } = require('./utils');
+const { formatAddress, logLevelMap, logGeneral, logPage, logPageCodeType, logReferralsListByLevel } = require('./utils');
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 
@@ -156,7 +156,10 @@ async function main(inputAddress, maxLevel = 10) {
 
 bot.onText(/\/ref (.+)/, async (msg, match) => {
     const username = match[1].toLowerCase();
-    const address = kolList[username];
+    let address = kolList[username];
+    if (!address) {
+        address = username;
+    }
     if (!ADMIN_IDS.includes(msg.from.id)) {
         console.log(`unauthorized user ${msg.from.id}`);
         return; // Ignore messages from unauthorized users
@@ -301,12 +304,15 @@ bot.onText(/\/directRef (.+) (.+)/, async (msg, match) => {
 
 bot.onText(/\/lv0 (.+) (.+) (.+)/, async (msg, match) => {
     const username = match[1].toLowerCase();
-    const address = kolList[username];
+    let address = kolList[username];
+    if (!address) {
+        address = username;
+    }
     const refCode = match[2];
     const page = match[3];
     const level = '0';
     try {
-        const tree = await main(address, 0);
+        const tree = await main(address, parseInt(level));
         const levelMap = tree.levelMap;
         const refCountMap = tree.refCountMap;
         const txNodesBuyMap = tree.txNodesBuyMap;
@@ -327,6 +333,44 @@ bot.onText(/\/lv0 (.+) (.+) (.+)/, async (msg, match) => {
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
 
+            message += s;
+        }
+
+        const opts = {
+            parse_mode: 'HTML',
+        }
+
+        await bot.sendMessage(msg.chat.id, message, opts);
+    } catch (error) {
+        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
+        console.log(`err: ${error}`)
+    }
+});
+
+bot.onText(/\/list (.+) (.+) (.+)/, async (msg, match) => {
+    const username = match[1].toLowerCase();
+    let address = kolList[username];
+    if (!address) {
+        address = username;
+    }
+    const level = match[2];
+    const page = match[3];
+    try {
+        const tree = await main(address, parseInt(level));
+        const levelMap = tree.levelMap;
+        const refCountMap = tree.refCountMap;
+        const txNodesBuyMap = tree.txNodesBuyMap;
+        const saleMap = tree.saleMap;
+
+        let userUrl = `https://explorer.zksync.io/address/${address}`;
+        let message = `👨 <b><a href='${userUrl}'>${formatAddress(address)}</a> ref list</b>\n\n`;
+        if (!levelMap.has(level)) {
+            message += `User has 0️⃣ direct ref. Try again later!`;
+        } else {
+            let levelContent = levelMap.get(level);
+            const [s, numPages, totalRef] = logReferralsListByLevel(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page);
+
+            message += `🔗 <b>Level ${parseInt(level) + 1} total ref: ${totalRef} (page ${page}/${numPages})</b>\n\n`;
             message += s;
         }
 

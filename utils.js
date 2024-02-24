@@ -2,6 +2,7 @@ const NO_CODE_PRICE = 0.04;
 const CODE_20_PRICE = 0.032;
 const CODE_100_PRICE = 0.0004;
 const TXS_PER_PAGE = 20;
+const REFERRERS_PER_PAGE = 50;
 const SPECIAL_ADDRESS = '0x3e657d3cf4cb2104e6a5a6ed6f19ae23d8869999';
 const LAST_5_TX = '0xa5733dba3e26e9c8cfb8c2f0c0af9fec0ffe6e7828ccece53fff76c7ccc2d54a';
 // last tx nsb get 5%: 0xa5733dba3e26e9c8cfb8c2f0c0af9fec0ffe6e7828ccece53fff76c7ccc2d54a - timestamp: 1706593104
@@ -213,6 +214,58 @@ function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
     return [s, numberKeySold, totalSale];
 }
 
+function logReferralsListByLevel(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page) {
+    let s = ``;
+    let allLogs = [];
+    let refSet = new Set();
+    let refNumKeysMap = new Map();
+    let refTxMap = new Map();
+    levelContent.forEach((txs, user) => {
+        let logs = [];
+        if (txs.length > 0) {
+            for (let i = 0; i < txs.length; i++) {
+                const [numNodes, txValue, from] = txNodesBuyMap.get(txs[i]);
+
+                if (!refNumKeysMap.has(from)) {
+                    refNumKeysMap.set(from, numNodes);
+                } else {
+                    refNumKeysMap.set(from, refNumKeysMap.get(from) + numNodes);
+                }
+
+                if (!refTxMap.has(from)) {
+                    refTxMap.set(from, [txs[i]]);
+                } else {
+                    refTxMap.set(from, [...refTxMap.get(from), txs[i]]);
+                }
+
+                refSet.add(from);
+
+            }
+
+            refSet.forEach((user) => {
+                let userUrl = `https://explorer.zksync.io/address/${user}`;
+                let numKeys = refNumKeysMap.get(user);
+                logs.push(`👨 <a href='${userUrl}'>${formatAddress(user)} (buy ${numKeys} keys)</a>\n\n`);
+            });
+        }
+        allLogs = [...allLogs, ...logs];
+    });
+
+    const splitLogs = splitArrayWithOffset(allLogs, REFERRERS_PER_PAGE);
+
+    let numPages = splitLogs.length;
+    if (page > numPages) {
+        s += `No more ref\n`;
+    } else {
+        const dipslayText = splitLogs[page - 1];
+        for (const text of dipslayText) {
+            s += text;
+        }
+    }
+    const totalRef = refSet.size;
+    return [s, numPages, totalRef];
+}
+
 /*
 levelMap = { 
     '0': {
@@ -244,4 +297,4 @@ saleMapNoCode = {
 }
 */
 
-module.exports = { formatAddress, logLevelMap, logGeneral, logPage, logPageCodeType };
+module.exports = { formatAddress, logLevelMap, logGeneral, logPage, logPageCodeType, logReferralsListByLevel };
