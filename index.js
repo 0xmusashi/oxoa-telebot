@@ -30,22 +30,16 @@ class Tree {
         this.saleMap = new Map();
     }
 
-    async preorderTraversal(node = this.root, level = 0) {
+    async preorderTraversal(node = this.root, level = 0, maxLevel = 10) {
         if (node) {
             await this.getNewNodeEvents(node.address, level);
             level++;
-            // node.children.forEach(child => this.preorderTraversal(child));
-            let searchNode = this.search(node.address);
-            for (const child of searchNode.children) {
-                await this.preorderTraversal(child, level);
+            if (level <= maxLevel) {
+                let searchNode = this.search(node.address);
+                for (const child of searchNode.children) {
+                    await this.preorderTraversal(child, level);
+                }
             }
-
-        }
-    }
-
-    async preorderTraversalDirectRef(node = this.root) {
-        if (node) {
-            await this.getNewNodeEvents(node.address, 0);
         }
     }
 
@@ -146,26 +140,12 @@ class Tree {
 
 }
 
-async function main(inputAddress) {
+async function main(inputAddress, maxLevel = 10) {
     console.log(`Referrals of ${inputAddress}`);
     const root = new Node(inputAddress);
     const tree = new Tree(root);
     try {
-        await tree.preorderTraversal();
-    } catch (error) {
-        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
-        console.log(`err: ${error}`);
-    }
-
-    return tree;
-}
-
-async function directRef(inputAddress) {
-    console.log(`Direct referrals of ${inputAddress}`);
-    const root = new Node(inputAddress);
-    const tree = new Tree(root);
-    try {
-        await tree.preorderTraversalDirectRef();
+        await tree.preorderTraversal(root, 0, maxLevel);
     } catch (error) {
         await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
         console.log(`err: ${error}`);
@@ -199,10 +179,10 @@ bot.onText(/\/ref (.+)/, async (msg, match) => {
             const [s1, numKeys, saleETH] = logGeneral(values, key, refCountMap, txNodesBuyMap, saleMap);
             s += s1;
             totalKeys += numKeys;
-            totalSaleETH += parseFloat(saleETH);
+            totalSaleETH += saleETH;
         });
 
-        message += `💲<b>Total sale: ${totalKeys} keys (${totalSaleETH} $ETH)</b>\n\n`;
+        message += `💲<b>Total sale: ${totalKeys} keys (${parseFloat(totalSaleETH.toFixed(4))} $ETH)</b>\n\n`;
         message += s;
 
         const opts = {
@@ -249,10 +229,11 @@ bot.onText(/\/all (.+)/, async (msg, match) => {
 });
 
 bot.onText(/\/level (.+) (.+)/, async (msg, match) => {
-    const address = match[1];
+    const username = match[1].toLowerCase();
+    const address = kolList[username];
     const level = match[2];
     try {
-        const tree = await main(address);
+        const tree = await main(address, level);
         const levelMap = tree.levelMap;
         const refCountMap = tree.refCountMap;
         const txNodesBuyMap = tree.txNodesBuyMap;
@@ -325,7 +306,7 @@ bot.onText(/\/lv0 (.+) (.+) (.+)/, async (msg, match) => {
     const page = match[3];
     const level = '0';
     try {
-        const tree = await directRef(address);
+        const tree = await main(address, 0);
         const levelMap = tree.levelMap;
         const refCountMap = tree.refCountMap;
         const txNodesBuyMap = tree.txNodesBuyMap;
