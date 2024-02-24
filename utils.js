@@ -51,7 +51,9 @@ function logLevelMap(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
                 } else if (ethValue == CODE_100_PRICE * numNodes) {
                     k = `🎁`;
                 }
-                s3 = s3.concat(`\t\t\t\t\t🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${numNodes} ${k} (${ethValue} $ETH)</a>\n`);
+                const oxoaReward = ethValue * 5 / 100;
+                const bonusReward = 0;
+                s3 = s3.concat(`\t\t\t\t\t🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${numNodes} ${k} (${ethValue} $ETH) - Reward 5% (${oxoaReward} $ETH) - Bonus reward (${bonusReward} $ETH)</a>\n`);
             }
             s3 = s3.concat(`\n`);
         }
@@ -126,7 +128,9 @@ function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, sale
                     k = `🎁`;
                     code = '100';
                 }
-                let log = `\t\t\t\t\t🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${numNodes} ${k} (${ethValue} $ETH)</a>\n\n`;
+                const oxoaReward = ethValue * 5 / 100;
+                const bonusReward = 0;
+                let log = `\t\t\t\t\t🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${numNodes} ${k} (${ethValue} $ETH) | Reward 5% (${oxoaReward} $ETH) | Bonus reward (${bonusReward} $ETH)</a>\n`;
 
                 if (code == refCode) {
                     logs.push(log);
@@ -190,9 +194,9 @@ function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
         let code100Sale = numCode100KeySold * CODE_100_PRICE;
         let totalSale = (nocodeSale + code20Sale + code100Sale).toFixed(3);
         s += `🔗 L${parseInt(level) + 1}: ${refSet.size} ref - ${numberKeySold} keys - Total sale: ${totalSale} $ETH\n\n`;
-        s += `      0%     :   ${numNoCodeKeySold} 🔑 (${nocodeSale.toFixed(3)} $ETH)\n`;
-        s += `      20%   :   ${numCode20KeySold} 🗝 (${code20Sale.toFixed(3)} $ETH)\n`;
-        s += `      100% :   ${numCode100KeySold} 🎁 (${code100Sale.toFixed(4)} $ETH)\n\n`;
+        s += `      0 %     :   ${numNoCodeKeySold} 🔑 (${nocodeSale.toFixed(3)} $ETH) \n`;
+        s += `      20 %   :   ${numCode20KeySold} 🗝 (${code20Sale.toFixed(3)} $ETH) \n`;
+        s += `      100 % :   ${numCode100KeySold} 🎁 (${code100Sale.toFixed(4)} $ETH) \n\n`;
     }
     return s;
 }
