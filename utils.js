@@ -2,6 +2,10 @@ const NO_CODE_PRICE = 0.04;
 const CODE_20_PRICE = 0.032;
 const CODE_100_PRICE = 0.0004;
 const TXS_PER_PAGE = 20;
+const SPECIAL_ADDRESS = '0x3e657d3cf4cb2104e6a5a6ed6f19ae23d8869999';
+const LAST_5_TX = '0xa5733dba3e26e9c8cfb8c2f0c0af9fec0ffe6e7828ccece53fff76c7ccc2d54a';
+// last tx nsb get 5%: 0xa5733dba3e26e9c8cfb8c2f0c0af9fec0ffe6e7828ccece53fff76c7ccc2d54a - timestamp: 1706593104
+// first tx nsb get 17%: 0xb367709fc7133836a33324137badfe996e947749973137f232c8a5a0a022e8ee - timestamp: 1706616311
 
 function formatAddress(address) {
     return address.slice(0, 4) + '...' + address.slice(-3);
@@ -113,7 +117,10 @@ function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, sale
     function logTxsMap(txs, user) {
         let logs = [];
         let numberRef = refCountMap.get(user);
+        let oxoaPercentage = 5;
+
         if (numberRef > 0 && txs.length > 0) {
+            let nsbFlag17PercentFlag = false;
             for (let i = 0; i < txs.length; i++) {
                 const [numNodes, ethValue, _] = txNodesBuyMap.get(txs[i]);
                 let k = `🔑`;
@@ -128,9 +135,18 @@ function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, sale
                     k = `🎁`;
                     code = '100';
                 }
-                const oxoaReward = ethValue * 5 / 100;
+
+                if (txs[i].toLowerCase() == LAST_5_TX) {
+                    nsbFlag17PercentFlag = true;
+                }
+
+                if (nsbFlag17PercentFlag) {
+                    oxoaPercentage = 17;
+                }
+
+                const oxoaReward = (ethValue * oxoaPercentage / 100).toFixed(4);
                 const bonusReward = 0;
-                let log = `\t\t\t\t\t🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${numNodes} ${k} (${ethValue} $ETH) | Reward 5% (${oxoaReward} $ETH) | Bonus reward (${bonusReward} $ETH)</a>\n`;
+                let log = `\t\t\t\t\t🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${numNodes} ${k} (${parseFloat(ethValue)} $ETH) | Reward ${oxoaPercentage}% (${parseFloat(oxoaReward)} $ETH) | Bonus reward (${parseFloat(bonusReward)} $ETH)</a>\n`;
 
                 if (code == refCode) {
                     logs.push(log);

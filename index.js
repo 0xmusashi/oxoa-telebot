@@ -43,6 +43,12 @@ class Tree {
         }
     }
 
+    async preorderTraversalDirectRef(node = this.root) {
+        if (node) {
+            await this.getNewNodeEvents(node.address, 0);
+        }
+    }
+
     preOrderInsert(parent, child) {
         if (!parent) {
             throw new Error("Parent node cannot be null");
@@ -146,6 +152,20 @@ async function main(inputAddress) {
     const tree = new Tree(root);
     try {
         await tree.preorderTraversal();
+    } catch (error) {
+        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
+        console.log(`err: ${error}`);
+    }
+
+    return tree;
+}
+
+async function directRef(inputAddress) {
+    console.log(`Direct referrals of ${inputAddress}`);
+    const root = new Node(inputAddress);
+    const tree = new Tree(root);
+    try {
+        await tree.preorderTraversalDirectRef();
     } catch (error) {
         await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
         console.log(`err: ${error}`);
@@ -305,7 +325,7 @@ bot.onText(/\/lv0 (.+) (.+) (.+)/, async (msg, match) => {
     const page = match[3];
     const level = '0';
     try {
-        const tree = await main(address);
+        const tree = await directRef(address);
         const levelMap = tree.levelMap;
         const refCountMap = tree.refCountMap;
         const txNodesBuyMap = tree.txNodesBuyMap;
