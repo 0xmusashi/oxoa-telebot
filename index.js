@@ -11,9 +11,7 @@ const RPC = 'https://mainnet.era.zksync.io';
 
 const provider = new ethers.providers.JsonRpcProvider(RPC);
 
-// const REF_ADDRESS = '0x3E657D3CF4cb2104E6A5a6eD6f19aE23d8869999';
-// const REF_ADDRESS = '0x898E7BA5997Edf98aC95E19a2D8dc417Fbe80621';
-// const REF_ADDRESS = '0x7a510789ff98074bc6a75b06d0f447c7ba8b6842';
+const ADMIN_IDS = [2127544523, 1559803968, 5728990868];
 
 class Node {
     constructor(address) {
@@ -141,14 +139,6 @@ class Tree {
 
 }
 
-function logMapElements(value, key, map) {
-    let s = 'key';
-    if (value > 1) {
-        s = 'keys';
-    }
-    console.log(`${key} sold ${value} ${s}`);
-}
-
 async function main(inputAddress) {
     console.log(`Referrals of ${inputAddress}`);
     const root = new Node(inputAddress);
@@ -165,6 +155,10 @@ async function main(inputAddress) {
 
 bot.onText(/\/ref (.+)/, async (msg, match) => {
     const address = match[1];
+    if (!ADMIN_IDS.includes(msg.from.id)) {
+        console.log(`unauthorized user ${msg.from.id}`);
+        return; // Ignore messages from unauthorized users
+    }
     try {
         const tree = await main(address);
         const levelMap = tree.levelMap;
@@ -173,10 +167,21 @@ bot.onText(/\/ref (.+)/, async (msg, match) => {
         const saleMap = tree.saleMap;
 
         const userUrl = `https://explorer.zksync.io/address/${address}`;
-        let message = `👨 <a href='${userUrl}'>${formatAddress(address)}</a> General Ref Info\n\n`;
+        let message = `👨 <b><a href='${userUrl}'>${formatAddress(address)}</a> General Ref Info</b>\n\n`;
+
+        let s = ``;
+        let totalKeys = 0;
+        let totalSaleETH = 0.0;
+
         levelMap.forEach((values, key) => {
-            message += logGeneral(values, key, refCountMap, txNodesBuyMap, saleMap);
+            const [s1, numKeys, saleETH] = logGeneral(values, key, refCountMap, txNodesBuyMap, saleMap);
+            s += s1;
+            totalKeys += numKeys;
+            totalSaleETH += saleETH;
         });
+
+        message += `💲<b>Total sale: ${totalKeys} keys (${totalSaleETH} $ETH)</b>\n\n`;
+        message += s;
 
         const opts = {
             parse_mode: 'HTML',
@@ -191,6 +196,10 @@ bot.onText(/\/ref (.+)/, async (msg, match) => {
 
 
 bot.onText(/\/all (.+)/, async (msg, match) => {
+    if (!ADMIN_IDS.includes(msg.from.id)) {
+        console.log(`unauthorized user ${msg.from.id}`);
+        return; // Ignore messages from unauthorized users
+    }
     const address = match[1];
     try {
         const tree = await main(address);
@@ -247,6 +256,10 @@ bot.onText(/\/level (.+) (.+)/, async (msg, match) => {
 });
 
 bot.onText(/\/directRef (.+) (.+)/, async (msg, match) => {
+    if (!ADMIN_IDS.includes(msg.from.id)) {
+        console.log(`unauthorized user ${msg.from.id}`);
+        return; // Ignore messages from unauthorized users
+    }
     const address = match[1];
     const page = match[2];
     const level = '0';

@@ -163,6 +163,7 @@ function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, sale
 function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
 
     let numberKeySold = 0;
+    let totalSale = 0.0;
     let refSet = new Set();
 
     let numNoCodeKeySold = 0;
@@ -192,13 +193,13 @@ function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
         let nocodeSale = numNoCodeKeySold * NO_CODE_PRICE;
         let code20Sale = numCode20KeySold * CODE_20_PRICE;
         let code100Sale = numCode100KeySold * CODE_100_PRICE;
-        let totalSale = (nocodeSale + code20Sale + code100Sale).toFixed(3);
-        s += `🔗 L${parseInt(level) + 1}: ${refSet.size} ref - ${numberKeySold} keys - Total sale: ${totalSale} $ETH\n\n`;
+        totalSale = nocodeSale + code20Sale + code100Sale;
+        s += `🔗 L${parseInt(level) + 1}: ${refSet.size} ref - ${numberKeySold} keys - Level sale: ${totalSale} $ETH\n\n`;
         s += `      0 %     :   ${numNoCodeKeySold} 🔑 (${nocodeSale.toFixed(3)} $ETH) \n`;
         s += `      20 %   :   ${numCode20KeySold} 🗝 (${code20Sale.toFixed(3)} $ETH) \n`;
         s += `      100 % :   ${numCode100KeySold} 🎁 (${code100Sale.toFixed(4)} $ETH) \n\n`;
     }
-    return s;
+    return [s, numberKeySold, totalSale];
 }
 
 /*
