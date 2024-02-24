@@ -1,5 +1,6 @@
 const ethers = require("ethers");
 const abi = require("./abi.json");
+const kolList = require("./kolList.json");
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const { formatAddress, logLevelMap, logGeneral, logPage, logPageCodeType } = require('./utils');
@@ -154,7 +155,8 @@ async function main(inputAddress) {
 }
 
 bot.onText(/\/ref (.+)/, async (msg, match) => {
-    const address = match[1];
+    const username = match[1].toLowerCase();
+    const address = kolList[username];
     if (!ADMIN_IDS.includes(msg.from.id)) {
         console.log(`unauthorized user ${msg.from.id}`);
         return; // Ignore messages from unauthorized users
@@ -177,7 +179,7 @@ bot.onText(/\/ref (.+)/, async (msg, match) => {
             const [s1, numKeys, saleETH] = logGeneral(values, key, refCountMap, txNodesBuyMap, saleMap);
             s += s1;
             totalKeys += numKeys;
-            totalSaleETH += saleETH;
+            totalSaleETH += parseFloat(saleETH);
         });
 
         message += `💲<b>Total sale: ${totalKeys} keys (${totalSaleETH} $ETH)</b>\n\n`;
@@ -297,7 +299,8 @@ bot.onText(/\/directRef (.+) (.+)/, async (msg, match) => {
 });
 
 bot.onText(/\/lv0 (.+) (.+) (.+)/, async (msg, match) => {
-    const address = match[1];
+    const username = match[1].toLowerCase();
+    const address = kolList[username];
     const refCode = match[2];
     const page = match[3];
     const level = '0';
