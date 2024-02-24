@@ -245,7 +245,7 @@ function logReferralsListByLevel(levelContent, level, refCountMap, txNodesBuyMap
             refSet.forEach((user) => {
                 let userUrl = `https://explorer.zksync.io/address/${user}`;
                 let numKeys = refNumKeysMap.get(user);
-                logs.push(`👨 <a href='${userUrl}'>${formatAddress(user)} (buy ${numKeys} keys)</a>\n\n`);
+                logs.push(`👨 <a href='${userUrl}'>${formatAddress(user)} (buy ${numKeys} 🔑)</a>\n\n`);
             });
         }
         allLogs = [...allLogs, ...logs];
