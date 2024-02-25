@@ -224,12 +224,12 @@ function logReferralsListByLevel(levelContent, level, refCountMap, txNodesBuyMap
         let logs = [];
         if (txs.length > 0) {
             for (let i = 0; i < txs.length; i++) {
-                const [numNodes, txValue, from] = txNodesBuyMap.get(txs[i]);
+                const [numKeys, txValue, from] = txNodesBuyMap.get(txs[i]);
 
                 if (!refNumKeysMap.has(from)) {
-                    refNumKeysMap.set(from, numNodes);
+                    refNumKeysMap.set(from, numKeys);
                 } else {
-                    refNumKeysMap.set(from, refNumKeysMap.get(from) + numNodes);
+                    refNumKeysMap.set(from, refNumKeysMap.get(from) + numKeys);
                 }
 
                 if (!refTxMap.has(from)) {
@@ -255,7 +255,62 @@ function logReferralsListByLevel(levelContent, level, refCountMap, txNodesBuyMap
 
     let numPages = splitLogs.length;
     if (page > numPages) {
-        s += `No more ref\n`;
+        s += `Nothing to show\n`;
+    } else {
+        const dipslayText = splitLogs[page - 1];
+        for (const text of dipslayText) {
+            s += text;
+        }
+    }
+    const totalRef = refSet.size;
+    return [s, numPages, totalRef];
+}
+
+function logReferralsListByLevelNsb(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page) {
+    let s = ``;
+    let allLogs = [];
+    let refSet = new Set();
+    let refNumKeysMap = new Map();
+    let refTxMap = new Map();
+    levelContent.forEach((txs, user) => {
+        let logs = [];
+        if (txs.length > 0) {
+            for (let i = 0; i < txs.length; i++) {
+                const [numKeys, txValue, from] = txNodesBuyMap.get(txs[i]);
+
+                if (!refNumKeysMap.has(from)) {
+                    refNumKeysMap.set(from, numKeys);
+                } else {
+                    refNumKeysMap.set(from, refNumKeysMap.get(from) + numKeys);
+                }
+
+                if (!refTxMap.has(from)) {
+                    refTxMap.set(from, [txs[i]]);
+                } else {
+                    refTxMap.set(from, [...refTxMap.get(from), txs[i]]);
+                }
+
+                refSet.add(from);
+
+            }
+
+            refSet.forEach((user) => {
+                let userUrl = `https://explorer.zksync.io/address/${user}`;
+                let numKeys = refNumKeysMap.get(user);
+                let numSubRef = refCountMap.get(user);
+                if (numSubRef > 0) {
+                    logs.push(`👨 <a href='${userUrl}'>${formatAddress(user)} (buy ${numKeys} 🔑)</a> (${numSubRef} ref - ${saleMap.get(user)} 🔑}) \n\n`);
+                }
+            });
+        }
+        allLogs = [...allLogs, ...logs];
+    });
+
+    const splitLogs = splitArrayWithOffset(allLogs, REFERRERS_PER_PAGE);
+
+    let numPages = splitLogs.length;
+    if (page > numPages) {
+        s += `Nothing to show\n`;
     } else {
         const dipslayText = splitLogs[page - 1];
         for (const text of dipslayText) {
@@ -297,4 +352,12 @@ saleMapNoCode = {
 }
 */
 
-module.exports = { formatAddress, logLevelMap, logGeneral, logPage, logPageCodeType, logReferralsListByLevel };
+module.exports = {
+    formatAddress,
+    logLevelMap,
+    logGeneral,
+    logPage,
+    logPageCodeType,
+    logReferralsListByLevel,
+    logReferralsListByLevelNsb
+};
