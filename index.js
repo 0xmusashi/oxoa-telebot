@@ -291,11 +291,11 @@ bot.onText(/\/lv1 (.+) (.+) (.+)/, async (msg, match) => {
         } else {
             let levelContent = levelMap.get(level);
 
-            const [s, numPages] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
 
             let numberRef = refCountMap.get(address);
             let userUrl = `https://explorer.zksync.io/address/${address}`;
-            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${saleMap.get(address)} 🔑 & ${numberRef} direct ref\n\n`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} direct ref\n\n`;
             message += `🔗 Direct ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
@@ -420,11 +420,11 @@ bot.onText(/\/lv2 (.+) (.+) (.+)/, async (msg, match) => {
         } else {
             let levelContent = levelMap.get(level);
 
-            const [s, numPages] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
 
             let numberRef = refCountMap.get(address);
             let userUrl = `https://explorer.zksync.io/address/${address}`;
-            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${saleMap.get(address)} 🔑 & ${numberRef} direct ref\n\n`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
             message += `🔗 Level 2️⃣ ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
@@ -465,11 +465,11 @@ bot.onText(/\/lv3 (.+) (.+) (.+)/, async (msg, match) => {
         } else {
             let levelContent = levelMap.get(level);
 
-            const [s, numPages] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
 
             let numberRef = refCountMap.get(address);
             let userUrl = `https://explorer.zksync.io/address/${address}`;
-            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${saleMap.get(address)} 🔑 & ${numberRef} direct ref\n\n`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
             message += `🔗 Level 3️⃣ ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
@@ -510,11 +510,11 @@ bot.onText(/\/lv4 (.+) (.+) (.+)/, async (msg, match) => {
         } else {
             let levelContent = levelMap.get(level);
 
-            const [s, numPages] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
 
             let numberRef = refCountMap.get(address);
             let userUrl = `https://explorer.zksync.io/address/${address}`;
-            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${saleMap.get(address)} 🔑 & ${numberRef} direct ref\n\n`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
             message += `🔗 Level 4️⃣ ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
@@ -555,11 +555,11 @@ bot.onText(/\/lv5 (.+) (.+) (.+)/, async (msg, match) => {
         } else {
             let levelContent = levelMap.get(level);
 
-            const [s, numPages] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
 
             let numberRef = refCountMap.get(address);
             let userUrl = `https://explorer.zksync.io/address/${address}`;
-            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${saleMap.get(address)} 🔑 & ${numberRef} direct ref\n\n`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
             message += `🔗 Level 5️⃣ - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
@@ -600,11 +600,11 @@ bot.onText(/\/lv6 (.+) (.+) (.+)/, async (msg, match) => {
         } else {
             let levelContent = levelMap.get(level);
 
-            const [s, numPages] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
 
             let numberRef = refCountMap.get(address);
             let userUrl = `https://explorer.zksync.io/address/${address}`;
-            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${saleMap.get(address)} 🔑 & ${numberRef} direct ref\n\n`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
             message += `🔗 Level 6️⃣ ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
@@ -645,11 +645,11 @@ bot.onText(/\/lv7 (.+) (.+) (.+)/, async (msg, match) => {
         } else {
             let levelContent = levelMap.get(level);
 
-            const [s, numPages] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
 
             let numberRef = refCountMap.get(address);
             let userUrl = `https://explorer.zksync.io/address/${address}`;
-            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${saleMap.get(address)} 🔑 & ${numberRef} direct ref\n\n`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
             message += `🔗 Level 7️⃣ ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;

@@ -116,9 +116,12 @@ function logPage(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page 
 function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page = 1) {
     let s2 = '';
     let allLogs = [];
+    let levelKeySale = 0;
+    let levelSubRef = 0;
     function logTxsMap(txs, user) {
         let logs = [];
         let numberRef = refCountMap.get(user);
+        levelSubRef += numberRef;
         let oxoaPercentage = 5;
 
         if (numberRef > 0 && txs.length > 0) {
@@ -136,6 +139,7 @@ function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, sale
                     k = `🎁`;
                     code = '100';
                 }
+                levelKeySale += numNodes;
 
                 const oxoaReward = (ethValue * oxoaPercentage / 100).toFixed(4);
                 const bonusReward = 0;
@@ -170,7 +174,7 @@ function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, sale
         }
     }
 
-    return [s2, numPages];
+    return [s2, numPages, levelKeySale, levelSubRef];
 }
 
 function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
