@@ -3,6 +3,7 @@ const CODE_20_PRICE = 0.032;
 const CODE_100_PRICE = 0.0004;
 const TXS_PER_PAGE = 20;
 const REFERRERS_PER_PAGE = 50;
+const REFERRERS_PER_PAGE_SHOWREF = 100;
 const SPECIAL_ADDRESS = '0x3e657d3cf4cb2104e6a5a6ed6f19ae23d8869999';
 const LAST_5_TX = '0xa5733dba3e26e9c8cfb8c2f0c0af9fec0ffe6e7828ccece53fff76c7ccc2d54a';
 // last tx nsb get 5%: 0xa5733dba3e26e9c8cfb8c2f0c0af9fec0ffe6e7828ccece53fff76c7ccc2d54a - timestamp: 1706593104
@@ -206,7 +207,7 @@ function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
         let code20Sale = numCode20KeySold * CODE_20_PRICE;
         let code100Sale = numCode100KeySold * CODE_100_PRICE;
         totalSale = nocodeSale + code20Sale + code100Sale;
-        s += `🔗 L${parseInt(level) + 1}: ${refSet.size} ref - ${numberKeySold} keys - Level sale: ${parseFloat(totalSale.toFixed(4))} $ETH\n\n`;
+        s += `🔗 L${parseInt(level)}: ${refSet.size} ref - ${numberKeySold} keys - Level sale: ${parseFloat(totalSale.toFixed(4))} $ETH\n\n`;
         s += `      0 %     :   ${numNoCodeKeySold} 🔑 (${parseFloat(nocodeSale.toFixed(3))} $ETH) \n`;
         s += `      20 %   :   ${numCode20KeySold} 🗝 (${parseFloat(code20Sale.toFixed(3))} $ETH) \n`;
         s += `      100 % :   ${numCode100KeySold} 🎁 (${parseFloat(code100Sale.toFixed(4))} $ETH) \n\n`;
@@ -299,23 +300,26 @@ function logReferralsListByLevelNsb(levelContent, level, refCountMap, txNodesBuy
                 let numKeys = refNumKeysMap.get(user);
                 let numSubRef = refCountMap.get(user);
                 if (numSubRef > 0) {
-                    logs.push(`👨 <a href='${userUrl}'>${formatAddress(user)} (buy ${numKeys} 🔑)</a> (${numSubRef} ref - ${saleMap.get(user)} 🔑}) \n\n`);
+                    logs.push(`👨 <a href='${userUrl}'>${formatAddress(user)} (buy ${numKeys} 🔑)</a> (${numSubRef} ref - ${saleMap.get(user)} 🔑) \n\n`);
                 }
             });
         }
         allLogs = [...allLogs, ...logs];
     });
 
-    const splitLogs = splitArrayWithOffset(allLogs, REFERRERS_PER_PAGE);
+    const splitLogs = splitArrayWithOffset(allLogs, REFERRERS_PER_PAGE_SHOWREF);
 
     let numPages = splitLogs.length;
-    if (page > numPages) {
-        s += `Nothing to show\n`;
-    } else {
-        const dipslayText = splitLogs[page - 1];
-        for (const text of dipslayText) {
-            s += text;
-        }
+    // if (page > numPages) {
+    //     s += `Nothing to show\n`;
+    // } else {
+    //     const dipslayText = splitLogs[page - 1];
+    //     for (const text of dipslayText) {
+    //         s += text;
+    //     }
+    // }
+    for (const text of allLogs) {
+        s += text;
     }
     const totalRef = refSet.size;
     return [s, numPages, totalRef];

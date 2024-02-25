@@ -20,7 +20,7 @@ const RPC = 'https://mainnet.era.zksync.io';
 
 const provider = new ethers.providers.JsonRpcProvider(RPC);
 
-const ADMIN_IDS = [2127544523, 1559803968, 5728990868];
+const ADMIN_IDS = [2127544523, 1559803968, 5728990868, 5413592753];
 
 class Node {
     constructor(address) {
@@ -38,7 +38,7 @@ class Tree {
         this.saleMap = new Map();
     }
 
-    async preorderTraversal(node = this.root, level = 0, maxLevel = 10) {
+    async preorderTraversal(node = this.root, level = 1, maxLevel = 10) {
         if (node) {
             await this.getNewNodeEvents(node.address, level);
             level++;
@@ -153,7 +153,7 @@ async function main(inputAddress, maxLevel = 10) {
     const root = new Node(inputAddress);
     const tree = new Tree(root);
     try {
-        await tree.preorderTraversal(root, 0, maxLevel);
+        await tree.preorderTraversal(root, 1, maxLevel);
     } catch (error) {
         console.log(`err: ${error}`);
         throw error;
@@ -269,48 +269,7 @@ bot.onText(/\/level (.+) (.+)/, async (msg, match) => {
     }
 });
 
-bot.onText(/\/directRef (.+) (.+)/, async (msg, match) => {
-    if (!ADMIN_IDS.includes(msg.from.id)) {
-        console.log(`unauthorized user ${msg.from.id}`);
-        return; // Ignore messages from unauthorized users
-    }
-    const address = match[1];
-    const page = match[2];
-    const level = '0';
-    try {
-        const tree = await main(address);
-        const levelMap = tree.levelMap;
-        const refCountMap = tree.refCountMap;
-        const txNodesBuyMap = tree.txNodesBuyMap;
-        const saleMap = tree.saleMap;
-
-        let message = '';
-        if (!levelMap.has(level)) {
-            message += `User has 0️⃣ direct ref. Try again later!`;
-        } else {
-            let levelContent = levelMap.get(level);
-            message += `🔗 Level ${level} (page ${page}):\n`;
-
-            let numberRef = refCountMap.get(address);
-            let userUrl = `https://explorer.zksync.io/address/${address}`;
-            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${saleMap.get(address)} 🔑 & ${numberRef} direct ref\n`;
-            message += `\t\t\t\tBuy Txs:\n`;
-
-            message += logPage(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page);
-        }
-
-        const opts = {
-            parse_mode: 'HTML',
-        }
-
-        await bot.sendMessage(msg.chat.id, message, opts);
-    } catch (error) {
-        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
-        console.log(`err: ${error}`)
-    }
-});
-
-bot.onText(/\/lv0 (.+) (.+) (.+)/, async (msg, match) => {
+bot.onText(/\/lv1 (.+) (.+) (.+)/, async (msg, match) => {
     const username = match[1].toLowerCase();
     let address = kolList[username];
     if (!address) {
@@ -318,7 +277,7 @@ bot.onText(/\/lv0 (.+) (.+) (.+)/, async (msg, match) => {
     }
     const refCode = match[2];
     const page = parseInt(match[3]);
-    const level = '0';
+    const level = '1';
     try {
         const tree = await main(address, parseInt(level));
         const levelMap = tree.levelMap;
@@ -364,6 +323,9 @@ bot.onText(/\/list (.+) (.+) (.+)/, async (msg, match) => {
     const level = match[2];
     const page = parseInt(match[3]);
     try {
+        if (parseInt(level) < 1) {
+            throw Error("level must be >= 1");
+        }
         const tree = await main(address, parseInt(level));
         const levelMap = tree.levelMap;
         const refCountMap = tree.refCountMap;
@@ -378,7 +340,7 @@ bot.onText(/\/list (.+) (.+) (.+)/, async (msg, match) => {
             let levelContent = levelMap.get(level);
             const [s, numPages, totalRef] = logReferralsListByLevel(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page);
 
-            message += `🔗 <b>Level ${parseInt(level) + 1} total ref: ${totalRef} (page ${page}/${numPages})</b>\n\n`;
+            message += `🔗 <b>Level ${parseInt(level)} total ref: ${totalRef} (page ${page}/${numPages})</b>\n\n`;
             message += s;
         }
 
@@ -393,7 +355,7 @@ bot.onText(/\/list (.+) (.+) (.+)/, async (msg, match) => {
     }
 });
 
-bot.onText(/\/showRef (.+) (.+)/, async (msg, match) => {
+bot.onText(/\/showRef (.+)/, async (msg, match) => {
     const username = match[1].toLowerCase();
     let address = kolList[username];
     if (!address) {
@@ -405,7 +367,7 @@ bot.onText(/\/showRef (.+) (.+)/, async (msg, match) => {
     }
     const page = parseInt(match[2]);
 
-    const level = '0';
+    const level = '1';
     try {
         const tree = await main(address, parseInt(level) + 1);
         const levelMap = tree.levelMap;
@@ -421,7 +383,277 @@ bot.onText(/\/showRef (.+) (.+)/, async (msg, match) => {
             let levelContent = levelMap.get(level);
             const [s, numPages, totalRef] = logReferralsListByLevelNsb(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page);
 
-            message += `🔗 <b>Level ${parseInt(level) + 1} total ref: ${totalRef} (page ${page}/${numPages})</b>\n\n`;
+            message += `🔗 <b>Level ${parseInt(level)} total ref: ${totalRef}</b>\n\n`;
+            message += s;
+        }
+
+        const opts = {
+            parse_mode: 'HTML',
+        }
+
+        await bot.sendMessage(msg.chat.id, message, opts);
+    } catch (error) {
+        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
+        console.log(`err: ${error}`)
+    }
+});
+
+bot.onText(/\/lv2 (.+) (.+) (.+)/, async (msg, match) => {
+    const username = match[1].toLowerCase();
+    let address = kolList[username];
+    if (!address) {
+        address = username;
+    }
+    const refCode = match[2];
+    const page = parseInt(match[3]);
+    const level = '2';
+    try {
+        const tree = await main(address, parseInt(level));
+        const levelMap = tree.levelMap;
+        const refCountMap = tree.refCountMap;
+        const txNodesBuyMap = tree.txNodesBuyMap;
+        const saleMap = tree.saleMap;
+
+        let message = '';
+        if (!levelMap.has(level)) {
+            message += `User has 0️⃣ direct ref. Try again later!`;
+        } else {
+            let levelContent = levelMap.get(level);
+
+            const [s, numPages] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+
+            let numberRef = refCountMap.get(address);
+            let userUrl = `https://explorer.zksync.io/address/${address}`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${saleMap.get(address)} 🔑 & ${numberRef} direct ref\n\n`;
+            message += `🔗 Level 2️⃣ ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
+
+            message += `\t\t\t\t🏷Sale transactions:\n\n`;
+
+            message += s;
+        }
+
+        const opts = {
+            parse_mode: 'HTML',
+        }
+
+        await bot.sendMessage(msg.chat.id, message, opts);
+    } catch (error) {
+        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
+        console.log(`err: ${error}`)
+    }
+});
+
+bot.onText(/\/lv3 (.+) (.+) (.+)/, async (msg, match) => {
+    const username = match[1].toLowerCase();
+    let address = kolList[username];
+    if (!address) {
+        address = username;
+    }
+    const refCode = match[2];
+    const page = parseInt(match[3]);
+    const level = '3';
+    try {
+        const tree = await main(address, parseInt(level));
+        const levelMap = tree.levelMap;
+        const refCountMap = tree.refCountMap;
+        const txNodesBuyMap = tree.txNodesBuyMap;
+        const saleMap = tree.saleMap;
+
+        let message = '';
+        if (!levelMap.has(level)) {
+            message += `User has 0️⃣ direct ref. Try again later!`;
+        } else {
+            let levelContent = levelMap.get(level);
+
+            const [s, numPages] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+
+            let numberRef = refCountMap.get(address);
+            let userUrl = `https://explorer.zksync.io/address/${address}`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${saleMap.get(address)} 🔑 & ${numberRef} direct ref\n\n`;
+            message += `🔗 Level 3️⃣ ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
+
+            message += `\t\t\t\t🏷Sale transactions:\n\n`;
+
+            message += s;
+        }
+
+        const opts = {
+            parse_mode: 'HTML',
+        }
+
+        await bot.sendMessage(msg.chat.id, message, opts);
+    } catch (error) {
+        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
+        console.log(`err: ${error}`)
+    }
+});
+
+bot.onText(/\/lv4 (.+) (.+) (.+)/, async (msg, match) => {
+    const username = match[1].toLowerCase();
+    let address = kolList[username];
+    if (!address) {
+        address = username;
+    }
+    const refCode = match[2];
+    const page = parseInt(match[3]);
+    const level = '4';
+    try {
+        const tree = await main(address, parseInt(level));
+        const levelMap = tree.levelMap;
+        const refCountMap = tree.refCountMap;
+        const txNodesBuyMap = tree.txNodesBuyMap;
+        const saleMap = tree.saleMap;
+
+        let message = '';
+        if (!levelMap.has(level)) {
+            message += `User has 0️⃣ direct ref. Try again later!`;
+        } else {
+            let levelContent = levelMap.get(level);
+
+            const [s, numPages] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+
+            let numberRef = refCountMap.get(address);
+            let userUrl = `https://explorer.zksync.io/address/${address}`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${saleMap.get(address)} 🔑 & ${numberRef} direct ref\n\n`;
+            message += `🔗 Level 4️⃣ ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
+
+            message += `\t\t\t\t🏷Sale transactions:\n\n`;
+
+            message += s;
+        }
+
+        const opts = {
+            parse_mode: 'HTML',
+        }
+
+        await bot.sendMessage(msg.chat.id, message, opts);
+    } catch (error) {
+        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
+        console.log(`err: ${error}`)
+    }
+});
+
+bot.onText(/\/lv5 (.+) (.+) (.+)/, async (msg, match) => {
+    const username = match[1].toLowerCase();
+    let address = kolList[username];
+    if (!address) {
+        address = username;
+    }
+    const refCode = match[2];
+    const page = parseInt(match[3]);
+    const level = '5';
+    try {
+        const tree = await main(address, parseInt(level));
+        const levelMap = tree.levelMap;
+        const refCountMap = tree.refCountMap;
+        const txNodesBuyMap = tree.txNodesBuyMap;
+        const saleMap = tree.saleMap;
+
+        let message = '';
+        if (!levelMap.has(level)) {
+            message += `User has 0️⃣ direct ref. Try again later!`;
+        } else {
+            let levelContent = levelMap.get(level);
+
+            const [s, numPages] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+
+            let numberRef = refCountMap.get(address);
+            let userUrl = `https://explorer.zksync.io/address/${address}`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${saleMap.get(address)} 🔑 & ${numberRef} direct ref\n\n`;
+            message += `🔗 Level 5️⃣ - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
+
+            message += `\t\t\t\t🏷Sale transactions:\n\n`;
+
+            message += s;
+        }
+
+        const opts = {
+            parse_mode: 'HTML',
+        }
+
+        await bot.sendMessage(msg.chat.id, message, opts);
+    } catch (error) {
+        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
+        console.log(`err: ${error}`)
+    }
+});
+
+bot.onText(/\/lv6 (.+) (.+) (.+)/, async (msg, match) => {
+    const username = match[1].toLowerCase();
+    let address = kolList[username];
+    if (!address) {
+        address = username;
+    }
+    const refCode = match[2];
+    const page = parseInt(match[3]);
+    const level = '6';
+    try {
+        const tree = await main(address, parseInt(level));
+        const levelMap = tree.levelMap;
+        const refCountMap = tree.refCountMap;
+        const txNodesBuyMap = tree.txNodesBuyMap;
+        const saleMap = tree.saleMap;
+
+        let message = '';
+        if (!levelMap.has(level)) {
+            message += `User has 0️⃣ direct ref. Try again later!`;
+        } else {
+            let levelContent = levelMap.get(level);
+
+            const [s, numPages] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+
+            let numberRef = refCountMap.get(address);
+            let userUrl = `https://explorer.zksync.io/address/${address}`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${saleMap.get(address)} 🔑 & ${numberRef} direct ref\n\n`;
+            message += `🔗 Level 6️⃣ ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
+
+            message += `\t\t\t\t🏷Sale transactions:\n\n`;
+
+            message += s;
+        }
+
+        const opts = {
+            parse_mode: 'HTML',
+        }
+
+        await bot.sendMessage(msg.chat.id, message, opts);
+    } catch (error) {
+        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
+        console.log(`err: ${error}`)
+    }
+});
+
+bot.onText(/\/lv7 (.+) (.+) (.+)/, async (msg, match) => {
+    const username = match[1].toLowerCase();
+    let address = kolList[username];
+    if (!address) {
+        address = username;
+    }
+    const refCode = match[2];
+    const page = parseInt(match[3]);
+    const level = '7';
+    try {
+        const tree = await main(address, parseInt(level));
+        const levelMap = tree.levelMap;
+        const refCountMap = tree.refCountMap;
+        const txNodesBuyMap = tree.txNodesBuyMap;
+        const saleMap = tree.saleMap;
+
+        let message = '';
+        if (!levelMap.has(level)) {
+            message += `User has 0️⃣ direct ref. Try again later!`;
+        } else {
+            let levelContent = levelMap.get(level);
+
+            const [s, numPages] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+
+            let numberRef = refCountMap.get(address);
+            let userUrl = `https://explorer.zksync.io/address/${address}`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${saleMap.get(address)} 🔑 & ${numberRef} direct ref\n\n`;
+            message += `🔗 Level 7️⃣ ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
+
+            message += `\t\t\t\t🏷Sale transactions:\n\n`;
+
             message += s;
         }
 
