@@ -6,6 +6,7 @@ const REFERRERS_PER_PAGE = 50;
 const REFERRERS_PER_PAGE_SHOWREF = 100;
 const SPECIAL_ADDRESS = '0x3e657d3cf4cb2104e6a5a6ed6f19ae23d8869999';
 const LAST_5_TX = '0xa5733dba3e26e9c8cfb8c2f0c0af9fec0ffe6e7828ccece53fff76c7ccc2d54a';
+const REF_CODES = ['0', '20', '100'];
 // last tx nsb get 5%: 0xa5733dba3e26e9c8cfb8c2f0c0af9fec0ffe6e7828ccece53fff76c7ccc2d54a - timestamp: 1706593104
 // first tx nsb get 17%: 0xb367709fc7133836a33324137badfe996e947749973137f232c8a5a0a022e8ee - timestamp: 1706616311
 

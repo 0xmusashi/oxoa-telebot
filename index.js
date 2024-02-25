@@ -21,6 +21,7 @@ const RPC = 'https://mainnet.era.zksync.io';
 const provider = new ethers.providers.JsonRpcProvider(RPC);
 
 const ADMIN_IDS = [2127544523, 1559803968, 5728990868, 5413592753];
+const REF_CODES = ['0', '20', '100'];
 
 class Node {
     constructor(address) {
@@ -276,6 +277,14 @@ bot.onText(/\/lv1 (.+) (.+) (.+)/, async (msg, match) => {
         address = username;
     }
     const refCode = match[2];
+    if (!REF_CODES.includes(refCode)) {
+        const opts = {
+            parse_mode: 'HTML',
+        }
+        const message = `Invalid ref code ${refCode}`;
+        await bot.sendMessage(msg.chat.id, message, opts);
+        return;
+    }
     const page = parseInt(match[3]);
     const level = '1';
     try {
@@ -405,6 +414,14 @@ bot.onText(/\/lv2 (.+) (.+) (.+)/, async (msg, match) => {
         address = username;
     }
     const refCode = match[2];
+    if (!REF_CODES.includes(refCode)) {
+        const opts = {
+            parse_mode: 'HTML',
+        }
+        const message = `Invalid ref code ${refCode}`;
+        await bot.sendMessage(msg.chat.id, message, opts);
+        return;
+    }
     const page = parseInt(match[3]);
     const level = '2';
     try {
@@ -450,6 +467,14 @@ bot.onText(/\/lv3 (.+) (.+) (.+)/, async (msg, match) => {
         address = username;
     }
     const refCode = match[2];
+    if (!REF_CODES.includes(refCode)) {
+        const opts = {
+            parse_mode: 'HTML',
+        }
+        const message = `Invalid ref code ${refCode}`;
+        await bot.sendMessage(msg.chat.id, message, opts);
+        return;
+    }
     const page = parseInt(match[3]);
     const level = '3';
     try {
@@ -495,6 +520,14 @@ bot.onText(/\/lv4 (.+) (.+) (.+)/, async (msg, match) => {
         address = username;
     }
     const refCode = match[2];
+    if (!REF_CODES.includes(refCode)) {
+        const opts = {
+            parse_mode: 'HTML',
+        }
+        const message = `Invalid ref code ${refCode}`;
+        await bot.sendMessage(msg.chat.id, message, opts);
+        return;
+    }
     const page = parseInt(match[3]);
     const level = '4';
     try {
@@ -540,6 +573,14 @@ bot.onText(/\/lv5 (.+) (.+) (.+)/, async (msg, match) => {
         address = username;
     }
     const refCode = match[2];
+    if (!REF_CODES.includes(refCode)) {
+        const opts = {
+            parse_mode: 'HTML',
+        }
+        const message = `Invalid ref code ${refCode}`;
+        await bot.sendMessage(msg.chat.id, message, opts);
+        return;
+    }
     const page = parseInt(match[3]);
     const level = '5';
     try {
@@ -585,6 +626,14 @@ bot.onText(/\/lv6 (.+) (.+) (.+)/, async (msg, match) => {
         address = username;
     }
     const refCode = match[2];
+    if (!REF_CODES.includes(refCode)) {
+        const opts = {
+            parse_mode: 'HTML',
+        }
+        const message = `Invalid ref code ${refCode}`;
+        await bot.sendMessage(msg.chat.id, message, opts);
+        return;
+    }
     const page = parseInt(match[3]);
     const level = '6';
     try {
@@ -630,6 +679,14 @@ bot.onText(/\/lv7 (.+) (.+) (.+)/, async (msg, match) => {
         address = username;
     }
     const refCode = match[2];
+    if (!REF_CODES.includes(refCode)) {
+        const opts = {
+            parse_mode: 'HTML',
+        }
+        const message = `Invalid ref code ${refCode}`;
+        await bot.sendMessage(msg.chat.id, message, opts);
+        return;
+    }
     const page = parseInt(match[3]);
     const level = '7';
     try {
