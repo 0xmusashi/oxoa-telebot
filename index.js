@@ -20,7 +20,7 @@ const RPC = 'https://mainnet.era.zksync.io';
 
 const provider = new ethers.providers.JsonRpcProvider(RPC);
 
-const ADMIN_IDS = [2127544523, 1559803968, 5728990868, 5413592753];
+const ADMIN_IDS = [2127544523, 1559803968, 5728990868, 5413592753, 278657276];
 const REF_CODES = ['0', '20', '100'];
 
 class Node {
