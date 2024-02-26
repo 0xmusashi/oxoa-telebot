@@ -296,7 +296,7 @@ bot.onText(/\/lv1 (.+) (.+) (.+)/, async (msg, match) => {
 
         let message = '';
         if (!levelMap.has(level)) {
-            message += `User has 0️⃣ direct ref. Try again later!`;
+            message += `User has 0️⃣ ref in this level. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
 
@@ -344,7 +344,7 @@ bot.onText(/\/list (.+) (.+) (.+)/, async (msg, match) => {
         let userUrl = `https://explorer.zksync.io/address/${address}`;
         let message = `👨 <b><a href='${userUrl}'>${formatAddress(address)}</a> ref list</b>\n\n`;
         if (!levelMap.has(level)) {
-            message += `User has 0️⃣ direct ref. Try again later!`;
+            message += `User has 0️⃣ ref in this level. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
             const [s, numPages, totalRef] = logReferralsListByLevel(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page);
@@ -387,7 +387,7 @@ bot.onText(/\/showRef (.+)/, async (msg, match) => {
         let userUrl = `https://explorer.zksync.io/address/${address}`;
         let message = `👨 <b><a href='${userUrl}'>${formatAddress(address)}</a> ref list</b>\n\n`;
         if (!levelMap.has(level)) {
-            message += `User has 0️⃣ direct ref. Try again later!`;
+            message += `User has 0️⃣ ref in this level. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
             const [s, numPages, totalRef] = logReferralsListByLevelNsb(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page);
@@ -433,7 +433,7 @@ bot.onText(/\/lv2 (.+) (.+) (.+)/, async (msg, match) => {
 
         let message = '';
         if (!levelMap.has(level)) {
-            message += `User has 0️⃣ direct ref. Try again later!`;
+            message += `User has 0️⃣ ref in this level. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
 
@@ -486,7 +486,7 @@ bot.onText(/\/lv3 (.+) (.+) (.+)/, async (msg, match) => {
 
         let message = '';
         if (!levelMap.has(level)) {
-            message += `User has 0️⃣ direct ref. Try again later!`;
+            message += `User has 0️⃣ ref in this level. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
 
@@ -539,7 +539,7 @@ bot.onText(/\/lv4 (.+) (.+) (.+)/, async (msg, match) => {
 
         let message = '';
         if (!levelMap.has(level)) {
-            message += `User has 0️⃣ direct ref. Try again later!`;
+            message += `User has 0️⃣ ref in this level. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
 
@@ -592,7 +592,7 @@ bot.onText(/\/lv5 (.+) (.+) (.+)/, async (msg, match) => {
 
         let message = '';
         if (!levelMap.has(level)) {
-            message += `User has 0️⃣ direct ref. Try again later!`;
+            message += `User has 0️⃣ ref in this level. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
 
@@ -645,7 +645,7 @@ bot.onText(/\/lv6 (.+) (.+) (.+)/, async (msg, match) => {
 
         let message = '';
         if (!levelMap.has(level)) {
-            message += `User has 0️⃣ direct ref. Try again later!`;
+            message += `User has 0️⃣ ref in this level. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
 
@@ -698,7 +698,7 @@ bot.onText(/\/lv7 (.+) (.+) (.+)/, async (msg, match) => {
 
         let message = '';
         if (!levelMap.has(level)) {
-            message += `User has 0️⃣ direct ref. Try again later!`;
+            message += `User has 0️⃣ ref in this level. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
 
