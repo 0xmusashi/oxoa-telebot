@@ -1,15 +1,15 @@
-const NO_CODE_PRICE = 0.04;
-const CODE_20_PRICE = 0.032;
-const CODE_100_PRICE = 0.0004;
-const NO_CODE_PRICE_T2 = 0.047;
-const CODE_20_PRICE_T2 = 0.0376;
-const CODE_100_PRICE_T2 = 0.00047;
-const NO_CODE_PRICE_T3 = 0.054;
-const CODE_20_PRICE_T3 = 0.0432;
-const CODE_100_PRICE_T3 = 0.00054;
-const NO_CODE_PRICE_T4 = 0.062;
-const CODE_20_PRICE_T4 = 0.0496;
-const CODE_100_PRICE_T4 = 0.00062;
+const TIER_PRICE_MAP = {
+    '1': [0.04, 0.032, 0.0004],
+    '2': [0.047, 0.0376, 0.00047],
+    '3': [0.054, 0.0432, 0.00054],
+    '4': [0.062, 0.0496, 0.00062],
+    '5': [0.073, 0.0584, 0.00073],
+    '6': [0.085, 0.068, 0.00085],
+    '7': [0.099, 0.0792, 0.00099],
+    '8': [0.115, 0.092, 0.00115],
+    '9': [0.134, 0.1072, 0.00134],
+    '10': [0.155, 0.124, 0.00155]
+}
 
 const TXS_PER_PAGE = 20;
 const REFERRERS_PER_PAGE = 50;
@@ -108,7 +108,7 @@ function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, sale
     return [s2, numPages, levelKeySale, levelSubRef];
 }
 
-function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
+function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap, tier) {
 
     let numberKeySold = 0;
     let totalSale = 0.0;
@@ -118,19 +118,22 @@ function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
     let numCode20KeySold = 0;
     let numCode100KeySold = 0;
 
+    const [NO_CODE_PRICE, CODE_20_PRICE, CODE_100_PRICE] = TIER_PRICE_MAP[tier];
+
     levelContent.forEach((txs, user) => {
         if (txs.length > 0) {
             for (let i = 0; i < txs.length; i++) {
                 const [numNodes, txValue, from] = txNodesBuyMap.get(txs[i]);
-                refSet.add(from);
-                numberKeySold += numNodes;
 
                 if (txValue == NO_CODE_PRICE * numNodes) {
                     numNoCodeKeySold += numNodes;
+                    refSet.add(from);
                 } else if (txValue == CODE_20_PRICE * numNodes) {
                     numCode20KeySold += numNodes;
+                    refSet.add(from);
                 } else if (txValue == CODE_100_PRICE * numNodes) {
                     numCode100KeySold += numNodes;
+                    refSet.add(from);
                 }
             }
         }
@@ -142,9 +145,11 @@ function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
         let code20Sale = numCode20KeySold * CODE_20_PRICE;
         let code100Sale = numCode100KeySold * CODE_100_PRICE;
         totalSale = nocodeSale + code20Sale + code100Sale;
+        numberKeySold += numNoCodeKeySold + numCode20KeySold + numCode100KeySold;
+
         s += `🔗 L${parseInt(level)}: ${refSet.size} ref - ${numberKeySold} keys - Level sale: ${parseFloat(totalSale.toFixed(4))} $ETH\n\n`;
-        s += `      0 %     :   ${numNoCodeKeySold} 🔑 (${parseFloat(nocodeSale.toFixed(3))} $ETH) \n`;
-        s += `      20 %   :   ${numCode20KeySold} 🗝 (${parseFloat(code20Sale.toFixed(3))} $ETH) \n`;
+        s += `      0 %     :   ${numNoCodeKeySold} 🔑 (${parseFloat(nocodeSale.toFixed(4))} $ETH) \n`;
+        s += `      20 %   :   ${numCode20KeySold} 🗝 (${parseFloat(code20Sale.toFixed(4))} $ETH) \n`;
         s += `      100 % :   ${numCode100KeySold} 🎁 (${parseFloat(code100Sale.toFixed(4))} $ETH) \n\n`;
     }
     return [s, numberKeySold, totalSale];

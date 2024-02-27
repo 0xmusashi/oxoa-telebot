@@ -20,6 +20,9 @@ const provider = new ethers.providers.JsonRpcProvider(RPC);
 
 const ADMIN_IDS = [2127544523, 1559803968, 5728990868, 5413592753, 278657276];
 const REF_CODES = ['0', '20', '100'];
+const TIERS = ['t1', 't2', 't3', 't4', 't5', 't6', 't7', 't8', 't9', 't10', 't11', 't12', 't13', 't14', 't15',
+    't16', 't17', 't18', 't19', 't20', 't21', 't22', 't23', 't24', 't25'
+];
 
 class Node {
     constructor(address) {
@@ -161,14 +164,22 @@ async function main(inputAddress, maxLevel = 10) {
     return tree;
 }
 
-bot.onText(/\/ref (.+)/, async (msg, match) => {
+bot.onText(/\/ref (.+) (.+)/, async (msg, match) => {
     const username = match[1].toLowerCase();
+    const tierParam = match[2].toLowerCase();
+    if (!TIERS.includes(tierParam)) {
+        console.log(`invalid tier ${tierParam}`);
+        await bot.sendMessage(msg.chat.id, `Invalid tier ${tierParam}`);
+        return;
+    }
+    const tier = tierParam.split('t')[1];
     let address = kolList[username];
     if (!address) {
         address = username;
     }
     if (!ADMIN_IDS.includes(msg.from.id)) {
         console.log(`unauthorized user ${msg.from.id}`);
+        await bot.sendMessage(msg.chat.id, `You are unauthorized to call this`);
         return; // Ignore messages from unauthorized users
     }
     try {
@@ -179,14 +190,14 @@ bot.onText(/\/ref (.+)/, async (msg, match) => {
         const saleMap = tree.saleMap;
 
         const userUrl = `https://explorer.zksync.io/address/${address}`;
-        let message = `👨 <b><a href='${userUrl}'>${formatAddress(address)}</a> General Ref Info</b>\n\n`;
+        let message = `👨 <b><a href='${userUrl}'>${formatAddress(address)}</a> General Ref Info - Tier ${tier}</b>\n\n`;
 
         let s = ``;
         let totalKeys = 0;
         let totalSaleETH = 0.0;
 
         levelMap.forEach((values, key) => {
-            const [s1, numKeys, saleETH] = logGeneral(values, key, refCountMap, txNodesBuyMap, saleMap);
+            const [s1, numKeys, saleETH] = logGeneral(values, key, refCountMap, txNodesBuyMap, saleMap, tier);
             s += s1;
             totalKeys += numKeys;
             totalSaleETH += saleETH;
