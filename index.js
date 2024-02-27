@@ -7,7 +7,6 @@ const {
     formatAddress,
     logLevelMap,
     logGeneral,
-    logPage,
     logPageCodeType,
     logReferralsListByLevel,
     logReferralsListByLevelNsb
@@ -196,68 +195,6 @@ bot.onText(/\/ref (.+)/, async (msg, match) => {
 
         message += `💲<b>Total sale: ${totalKeys} keys (${parseFloat(totalSaleETH.toFixed(4))} $ETH)</b>\n\n`;
         message += s;
-
-        const opts = {
-            parse_mode: 'HTML',
-        }
-
-        await bot.sendMessage(msg.chat.id, message, opts);
-    } catch (error) {
-        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
-        console.log(`err: ${error}`)
-    }
-});
-
-
-bot.onText(/\/all (.+)/, async (msg, match) => {
-    if (!ADMIN_IDS.includes(msg.from.id)) {
-        console.log(`unauthorized user ${msg.from.id}`);
-        return; // Ignore messages from unauthorized users
-    }
-    const address = match[1];
-    try {
-        const tree = await main(address);
-        const levelMap = tree.levelMap;
-        const refCountMap = tree.refCountMap;
-        const txNodesBuyMap = tree.txNodesBuyMap;
-        const saleMap = tree.saleMap;
-
-        // console.log(`levelMap: `, levelMap);
-
-        let message = '';
-        levelMap.forEach((values, key) => {
-            message += logLevelMap(values, key, refCountMap, txNodesBuyMap, saleMap);
-        });
-
-        const opts = {
-            parse_mode: 'HTML',
-        }
-
-        await bot.sendMessage(msg.chat.id, message, opts);
-    } catch (error) {
-        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
-        console.log(`err: ${error}`)
-    }
-});
-
-bot.onText(/\/level (.+) (.+)/, async (msg, match) => {
-    const username = match[1].toLowerCase();
-    const address = kolList[username];
-    const level = match[2];
-    try {
-        const tree = await main(address, level);
-        const levelMap = tree.levelMap;
-        const refCountMap = tree.refCountMap;
-        const txNodesBuyMap = tree.txNodesBuyMap;
-        const saleMap = tree.saleMap;
-
-        let message = '';
-        if (!levelMap.has(level)) {
-            message += `User has 0️⃣ level ${level} ref. Try again later!`;
-        } else {
-            let levelContent = levelMap.get(level);
-            message += logLevelMap(levelContent, level, refCountMap, txNodesBuyMap, saleMap);
-        }
 
         const opts = {
             parse_mode: 'HTML',

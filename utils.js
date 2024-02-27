@@ -1,6 +1,16 @@
 const NO_CODE_PRICE = 0.04;
 const CODE_20_PRICE = 0.032;
 const CODE_100_PRICE = 0.0004;
+const NO_CODE_PRICE_T2 = 0.047;
+const CODE_20_PRICE_T2 = 0.0376;
+const CODE_100_PRICE_T2 = 0.00047;
+const NO_CODE_PRICE_T3 = 0.054;
+const CODE_20_PRICE_T3 = 0.0432;
+const CODE_100_PRICE_T3 = 0.00054;
+const NO_CODE_PRICE_T4 = 0.062;
+const CODE_20_PRICE_T4 = 0.0496;
+const CODE_100_PRICE_T4 = 0.00062;
+
 const TXS_PER_PAGE = 20;
 const REFERRERS_PER_PAGE = 50;
 const REFERRERS_PER_PAGE_SHOWREF = 100;
@@ -70,48 +80,6 @@ function logLevelMap(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
         s2 += logTxsMap(txs, user);
     });
     return s1 + s2;
-}
-
-function logPage(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page = 1) {
-    let s2 = '';
-    let allLogs = [];
-    function logTxsMap(txs, user) {
-        let logs = [];
-        let numberRef = refCountMap.get(user);
-        if (numberRef > 0 && txs.length > 0) {
-            for (let i = 0; i < txs.length; i++) {
-                const [numNodes, ethValue, _] = txNodesBuyMap.get(txs[i]);
-                let k = `🔑`;
-                if (ethValue == NO_CODE_PRICE * numNodes) {
-                    k = `🔑`;
-                } else if (ethValue == CODE_20_PRICE * numNodes) {
-                    k = `🗝`;
-                } else if (ethValue == CODE_100_PRICE * numNodes) {
-                    k = `🎁`;
-                }
-                logs.push(`\t\t\t\t\t🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${numNodes} ${k} (${ethValue} $ETH)</a>\n`);
-            }
-        }
-        return logs;
-    }
-
-    levelContent.forEach((txs, user) => {
-        let logs = logTxsMap(txs, user);
-        allLogs = [...allLogs, ...logs];
-    });
-
-    const splitLogs = splitArrayWithOffset(allLogs, TXS_PER_PAGE);
-
-    if (page > splitLogs.length) {
-        s2 += `No more tx\n`;
-    } else {
-        const dipslayText = splitLogs[page - 1];
-        for (const text of dipslayText) {
-            s2 += text;
-        }
-    }
-
-    return s2;
 }
 
 function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page = 1) {
