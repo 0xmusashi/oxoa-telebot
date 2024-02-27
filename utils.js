@@ -44,44 +44,6 @@ function splitArrayWithOffset(arr, size, offset = 0) {
     return subarrays;
 }
 
-function logLevelMap(levelContent, level, refCountMap, txNodesBuyMap, saleMap) {
-    let s1 = ``;
-    if (level > 0) {
-        s1 = `🔗 Level ${level}:\n`;
-    }
-    let s2 = '';
-    function logTxsMap(txs, user) {
-        let s3 = '';
-        let numberRef = refCountMap.get(user);
-        let userUrl = `https://explorer.zksync.io/address/${user}`;
-
-        s3 = s3.concat(`👨 <a href='${userUrl}'>${formatAddress(user)}</a> sold ${saleMap.get(user)} 🔑 & ${numberRef} direct ref\n`);
-        if (numberRef > 0 && txs.length > 0) {
-            s3 = s3.concat(`\t\t\t\tBuy Txs:\n`);
-            for (let i = 0; i < txs.length; i++) {
-                const [numNodes, ethValue, _] = txNodesBuyMap.get(txs[i]);
-                let k = `🔑`;
-                if (ethValue == NO_CODE_PRICE * numNodes) {
-                    k = `🔑`;
-                } else if (ethValue == CODE_20_PRICE * numNodes) {
-                    k = `🗝`;
-                } else if (ethValue == CODE_100_PRICE * numNodes) {
-                    k = `🎁`;
-                }
-                const oxoaReward = ethValue * 5 / 100;
-                const bonusReward = 0;
-                s3 = s3.concat(`\t\t\t\t\t🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${numNodes} ${k} (${ethValue} $ETH) - Reward 5% (${oxoaReward} $ETH) - Bonus reward (${bonusReward} $ETH)</a>\n`);
-            }
-            s3 = s3.concat(`\n`);
-        }
-        return s3;
-    }
-    levelContent.forEach((txs, user) => {
-        s2 += logTxsMap(txs, user);
-    });
-    return s1 + s2;
-}
-
 function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page = 1) {
     let s2 = '';
     let allLogs = [];
@@ -331,9 +293,7 @@ saleMapNoCode = {
 
 module.exports = {
     formatAddress,
-    logLevelMap,
     logGeneral,
-    logPage,
     logPageCodeType,
     logReferralsListByLevel,
     logReferralsListByLevelNsb
