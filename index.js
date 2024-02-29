@@ -15,16 +15,15 @@ const {
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 
-const CONTRACT_ADDRESS = '0x2a88444D7A5626e52928D9799ae15F0Bb273bFbd';
-const RPC = 'https://mainnet.era.zksync.io';
+const {
+    CONTRACT_ADDRESS,
+    RPC,
+    ADMIN_IDS,
+    REF_CODES,
+    TIERS
+} = require('./constants');
 
 const provider = new ethers.providers.JsonRpcProvider(RPC);
-
-const ADMIN_IDS = [2127544523, 1559803968, 5728990868, 5413592753, 278657276];
-const REF_CODES = ['0', '20', '100'];
-const TIERS = ['t1', 't2', 't3', 't4', 't5', 't6', 't7', 't8', 't9', 't10', 't11', 't12', 't13', 't14', 't15',
-    't16', 't17', 't18', 't19', 't20', 't21', 't22', 't23', 't24', 't25'
-];
 
 class Node {
     constructor(address) {

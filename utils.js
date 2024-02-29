@@ -1,24 +1,12 @@
-const TIER_PRICE_MAP = {
-    '1': [0.04, 0.032, 0.0004],
-    '2': [0.047, 0.0376, 0.00047],
-    '3': [0.054, 0.0432, 0.00054],
-    '4': [0.062, 0.0496, 0.00062],
-    '5': [0.073, 0.0584, 0.00073],
-    '6': [0.085, 0.068, 0.00085],
-    '7': [0.099, 0.0792, 0.00099],
-    '8': [0.115, 0.092, 0.00115],
-    '9': [0.134, 0.1072, 0.00134],
-    '10': [0.155, 0.124, 0.00155]
-}
+const { getSelfRefAddresses } = require('./selfRef');
 
-const TXS_PER_PAGE = 20;
-const REFERRERS_PER_PAGE = 50;
-const REFERRERS_PER_PAGE_SHOWREF = 100;
-const SPECIAL_ADDRESS = '0x3e657d3cf4cb2104e6a5a6ed6f19ae23d8869999';
-const LAST_5_TX = '0xa5733dba3e26e9c8cfb8c2f0c0af9fec0ffe6e7828ccece53fff76c7ccc2d54a';
-const REF_CODES = ['0', '20', '100'];
-// last tx nsb get 5%: 0xa5733dba3e26e9c8cfb8c2f0c0af9fec0ffe6e7828ccece53fff76c7ccc2d54a - timestamp: 1706593104
-// first tx nsb get 17%: 0xb367709fc7133836a33324137badfe996e947749973137f232c8a5a0a022e8ee - timestamp: 1706616311
+const {
+    TIER_PRICE_MAP,
+    TXS_PER_PAGE,
+    REFERRERS_PER_PAGE,
+    REFERRERS_PER_PAGE_SHOWREF,
+    LAST_5_TX
+} = require('./constants');
 
 function formatAddress(address) {
     return address.slice(0, 4) + '...' + address.slice(-3);

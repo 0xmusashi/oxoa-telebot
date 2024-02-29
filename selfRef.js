@@ -1,18 +1,26 @@
 const ethers = require("ethers");
-const fs = require('fs');
 const abi = require("./abi.json");
 
-const CONTRACT_ADDRESS = '0x2a88444D7A5626e52928D9799ae15F0Bb273bFbd';
-const RPC = 'https://mainnet.era.zksync.io';
+const { CONTRACT_ADDRESS, SPECIAL_ADDRESS, RPC, TIER_PRICE_MAP } = require('./constants');
 
 const provider = new ethers.providers.JsonRpcProvider(RPC);
 // Create a contract instance
 const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, provider);
 
-async function getSelfRefAddresses() {
+function getTierFromNodePrice(price) {
+    let prices = [-1.0];
+    for (const [_, value] of Object.entries(TIER_PRICE_MAP)) {
+        prices.push(value[0]);
+    }
+    let result = prices.indexOf(parseFloat(price.toFixed(4)));
+    return result;
+}
+
+async function getSelfRefAddresses(tier) {
     try {
 
         let users = new Set();
+        let userBuy = new Map();
         let txHashes = [];
         const filter = {
             address: CONTRACT_ADDRESS,
@@ -28,43 +36,46 @@ async function getSelfRefAddresses() {
 
         for (const event of events) {
             const args = event.args;
-            const txHash = event.transactionHash;
+
+            const nodePrice = args['_nodePrice'];
+            const price = parseFloat(ethers.utils.formatUnits(nodePrice).toString());
+            let txTier = getTierFromNodePrice(price).toString();
+            if (txTier != tier) {
+                continue;
+            }
+
+
             const owner = args['_owner'];
+            if (owner.toLowerCase() == SPECIAL_ADDRESS) {
+                continue;
+            }
+
             const refAddress = args['_refAddress'];
+            const numKeys = args['_numberOfNodes'].toNumber();
+            const txHash = event.transactionHash;
+
             if (owner == refAddress) {
                 txHashes.push(txHash);
-                users.add(owner);
+                if (!users.has(owner)) {
+                    users.add(owner);
+                    userBuy.set(owner, numKeys);
+                } else {
+                    userBuy.set(owner, userBuy.get(owner) + numKeys);
+                }
             }
         }
 
-        let usersList = [];
-        users.forEach(user => {
-            usersList.push(user);
-        });
-        const usersContent = usersList.join('\n');
-        const txContent = txHashes.join('\n');
-
-        const userFilePath = 'self_ref_users.txt';
-        fs.writeFile(userFilePath, usersContent, (err) => {
-            if (err) {
-                console.error('Error writing file:', err);
-            } else {
-                console.log(`Data written to file: ${userFilePath}`);
-            }
-        });
-
-        const txFilePath = 'self_ref_txs.txt';
-        fs.writeFile(txFilePath, txContent, (err) => {
-            if (err) {
-                console.error('Error writing file:', err);
-            } else {
-                console.log(`Data written to file: ${txFilePath}`);
-            }
-        });
+        // return [userBuy, txHashes];
+        console.log(`userBuy: `, userBuy);
 
     } catch (error) {
-        console.error(error);
+        // console.error(error);
+        throw new Error("RPC failed. Try again later");
     }
 }
 
-getSelfRefAddresses();
+// getSelfRefAddresses();
+
+module.exports = {
+    getSelfRefAddresses
+}
