@@ -4,11 +4,13 @@ const kolList = require("./kolList.json");
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const {
+    getLevelFromCommand,
     formatAddress,
     logGeneral,
     logPageCodeType,
     logReferralsListByLevel,
-    logReferralsListByLevelNsb
+    logReferralsListByLevelNsb,
+    getTierFromTxValueAndNumKeys
 } = require('./utils');
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
@@ -107,7 +109,8 @@ class Tree {
                 let tx = await provider.getTransaction(txHash);
                 let txValue = parseFloat(ethers.utils.formatUnits(tx.value).toString());
 
-                this.txNodesBuyMap.set(txHash, [numberOfNodes, txValue, tx.from]);
+                let tier = getTierFromTxValueAndNumKeys(txValue, numberOfNodes).toString();
+                this.txNodesBuyMap.set(txHash, [numberOfNodes, txValue, tx.from, tier]);
 
                 let child = new Node(owner);
                 if (!ownersSet.has(owner)) {
@@ -157,8 +160,7 @@ async function main(inputAddress, maxLevel = 10) {
     try {
         await tree.preorderTraversal(root, 1, maxLevel);
     } catch (error) {
-        console.log(`err: ${error}`);
-        throw error;
+        throw new Error("RPC call failed. Please try again");
     }
 
     return tree;
@@ -205,59 +207,6 @@ bot.onText(/\/ref (.+) (.+)/, async (msg, match) => {
 
         message += `💲<b>Total sale: ${totalKeys} keys (${parseFloat(totalSaleETH.toFixed(4))} $ETH)</b>\n\n`;
         message += s;
-
-        const opts = {
-            parse_mode: 'HTML',
-        }
-
-        await bot.sendMessage(msg.chat.id, message, opts);
-    } catch (error) {
-        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
-        console.log(`err: ${error}`)
-    }
-});
-
-bot.onText(/\/lv1 (.+) (.+) (.+)/, async (msg, match) => {
-    const username = match[1].toLowerCase();
-    let address = kolList[username];
-    if (!address) {
-        address = username;
-    }
-    const refCode = match[2];
-    if (!REF_CODES.includes(refCode)) {
-        const opts = {
-            parse_mode: 'HTML',
-        }
-        const message = `Invalid ref code ${refCode}`;
-        await bot.sendMessage(msg.chat.id, message, opts);
-        return;
-    }
-    const page = parseInt(match[3]);
-    const level = '1';
-    try {
-        const tree = await main(address, parseInt(level));
-        const levelMap = tree.levelMap;
-        const refCountMap = tree.refCountMap;
-        const txNodesBuyMap = tree.txNodesBuyMap;
-        const saleMap = tree.saleMap;
-
-        let message = '';
-        if (!levelMap.has(level)) {
-            message += `User has 0️⃣ ref in this level. Try again later!`;
-        } else {
-            let levelContent = levelMap.get(level);
-
-            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
-
-            let numberRef = refCountMap.get(address);
-            let userUrl = `https://explorer.zksync.io/address/${address}`;
-            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} direct ref\n\n`;
-            message += `🔗 Direct ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
-
-            message += `\t\t\t\t🏷Sale transactions:\n\n`;
-
-            message += s;
-        }
 
         const opts = {
             parse_mode: 'HTML',
@@ -354,7 +303,8 @@ bot.onText(/\/showRef (.+)/, async (msg, match) => {
     }
 });
 
-bot.onText(/\/lv2 (.+) (.+) (.+)/, async (msg, match) => {
+bot.onText(/\/lv1 (.+) (.+) (.+) (.+)/, async (msg, match) => {
+    const level = getLevelFromCommand(match);
     const username = match[1].toLowerCase();
     let address = kolList[username];
     if (!address) {
@@ -370,7 +320,13 @@ bot.onText(/\/lv2 (.+) (.+) (.+)/, async (msg, match) => {
         return;
     }
     const page = parseInt(match[3]);
-    const level = '2';
+    const tierParam = match[4].toLowerCase();
+    if (!TIERS.includes(tierParam)) {
+        console.log(`invalid tier ${tierParam}`);
+        await bot.sendMessage(msg.chat.id, `Invalid tier ${tierParam}`);
+        return;
+    }
+    const tier = tierParam.split('t')[1];
     try {
         const tree = await main(address, parseInt(level));
         const levelMap = tree.levelMap;
@@ -380,16 +336,16 @@ bot.onText(/\/lv2 (.+) (.+) (.+)/, async (msg, match) => {
 
         let message = '';
         if (!levelMap.has(level)) {
-            message += `User has 0️⃣ ref in this level. Try again later!`;
+            message += `User has 0️⃣ tier ${tier} ref in this level. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
 
-            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page, tier);
 
             let numberRef = refCountMap.get(address);
             let userUrl = `https://explorer.zksync.io/address/${address}`;
-            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
-            message += `🔗 Level 2️⃣ ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} direct ref\n\n`;
+            message += `🔗 Direct ref - ${refCode}% discount sale - Tier ${tier} - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
 
@@ -407,7 +363,8 @@ bot.onText(/\/lv2 (.+) (.+) (.+)/, async (msg, match) => {
     }
 });
 
-bot.onText(/\/lv3 (.+) (.+) (.+)/, async (msg, match) => {
+bot.onText(/\/lv2 (.+) (.+) (.+) (.+)/, async (msg, match) => {
+    const level = getLevelFromCommand(match);
     const username = match[1].toLowerCase();
     let address = kolList[username];
     if (!address) {
@@ -423,7 +380,13 @@ bot.onText(/\/lv3 (.+) (.+) (.+)/, async (msg, match) => {
         return;
     }
     const page = parseInt(match[3]);
-    const level = '3';
+    const tierParam = match[4].toLowerCase();
+    if (!TIERS.includes(tierParam)) {
+        console.log(`invalid tier ${tierParam}`);
+        await bot.sendMessage(msg.chat.id, `Invalid tier ${tierParam}`);
+        return;
+    }
+    const tier = tierParam.split('t')[1];
     try {
         const tree = await main(address, parseInt(level));
         const levelMap = tree.levelMap;
@@ -433,16 +396,15 @@ bot.onText(/\/lv3 (.+) (.+) (.+)/, async (msg, match) => {
 
         let message = '';
         if (!levelMap.has(level)) {
-            message += `User has 0️⃣ ref in this level. Try again later!`;
+            message += `User has 0️⃣ tier ${tier} ref in this level. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
 
-            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page, tier);
 
-            let numberRef = refCountMap.get(address);
             let userUrl = `https://explorer.zksync.io/address/${address}`;
             message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
-            message += `🔗 Level 3️⃣ ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
+            message += `🔗 Level ${level} ref - ${refCode}% discount sale - Tier ${tier} - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
 
@@ -460,7 +422,8 @@ bot.onText(/\/lv3 (.+) (.+) (.+)/, async (msg, match) => {
     }
 });
 
-bot.onText(/\/lv4 (.+) (.+) (.+)/, async (msg, match) => {
+bot.onText(/\/lv3 (.+) (.+) (.+) (.+)/, async (msg, match) => {
+    const level = getLevelFromCommand(match);
     const username = match[1].toLowerCase();
     let address = kolList[username];
     if (!address) {
@@ -476,7 +439,13 @@ bot.onText(/\/lv4 (.+) (.+) (.+)/, async (msg, match) => {
         return;
     }
     const page = parseInt(match[3]);
-    const level = '4';
+    const tierParam = match[4].toLowerCase();
+    if (!TIERS.includes(tierParam)) {
+        console.log(`invalid tier ${tierParam}`);
+        await bot.sendMessage(msg.chat.id, `Invalid tier ${tierParam}`);
+        return;
+    }
+    const tier = tierParam.split('t')[1];
     try {
         const tree = await main(address, parseInt(level));
         const levelMap = tree.levelMap;
@@ -486,16 +455,15 @@ bot.onText(/\/lv4 (.+) (.+) (.+)/, async (msg, match) => {
 
         let message = '';
         if (!levelMap.has(level)) {
-            message += `User has 0️⃣ ref in this level. Try again later!`;
+            message += `User has 0️⃣ tier ${tier} ref in this level. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
 
-            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page, tier);
 
-            let numberRef = refCountMap.get(address);
             let userUrl = `https://explorer.zksync.io/address/${address}`;
             message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
-            message += `🔗 Level 4️⃣ ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
+            message += `🔗 Level ${level} ref - ${refCode}% discount sale - Tier ${tier} - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
 
@@ -513,7 +481,8 @@ bot.onText(/\/lv4 (.+) (.+) (.+)/, async (msg, match) => {
     }
 });
 
-bot.onText(/\/lv5 (.+) (.+) (.+)/, async (msg, match) => {
+bot.onText(/\/lv4 (.+) (.+) (.+) (.+)/, async (msg, match) => {
+    const level = getLevelFromCommand(match);
     const username = match[1].toLowerCase();
     let address = kolList[username];
     if (!address) {
@@ -529,7 +498,13 @@ bot.onText(/\/lv5 (.+) (.+) (.+)/, async (msg, match) => {
         return;
     }
     const page = parseInt(match[3]);
-    const level = '5';
+    const tierParam = match[4].toLowerCase();
+    if (!TIERS.includes(tierParam)) {
+        console.log(`invalid tier ${tierParam}`);
+        await bot.sendMessage(msg.chat.id, `Invalid tier ${tierParam}`);
+        return;
+    }
+    const tier = tierParam.split('t')[1];
     try {
         const tree = await main(address, parseInt(level));
         const levelMap = tree.levelMap;
@@ -539,16 +514,15 @@ bot.onText(/\/lv5 (.+) (.+) (.+)/, async (msg, match) => {
 
         let message = '';
         if (!levelMap.has(level)) {
-            message += `User has 0️⃣ ref in this level. Try again later!`;
+            message += `User has 0️⃣ tier ${tier} ref in this level. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
 
-            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page, tier);
 
-            let numberRef = refCountMap.get(address);
             let userUrl = `https://explorer.zksync.io/address/${address}`;
             message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
-            message += `🔗 Level 5️⃣ - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
+            message += `🔗 Level ${level} ref - ${refCode}% discount sale - Tier ${tier} - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
 
@@ -566,7 +540,8 @@ bot.onText(/\/lv5 (.+) (.+) (.+)/, async (msg, match) => {
     }
 });
 
-bot.onText(/\/lv6 (.+) (.+) (.+)/, async (msg, match) => {
+bot.onText(/\/lv5 (.+) (.+) (.+) (.+)/, async (msg, match) => {
+    const level = getLevelFromCommand(match);
     const username = match[1].toLowerCase();
     let address = kolList[username];
     if (!address) {
@@ -582,7 +557,13 @@ bot.onText(/\/lv6 (.+) (.+) (.+)/, async (msg, match) => {
         return;
     }
     const page = parseInt(match[3]);
-    const level = '6';
+    const tierParam = match[4].toLowerCase();
+    if (!TIERS.includes(tierParam)) {
+        console.log(`invalid tier ${tierParam}`);
+        await bot.sendMessage(msg.chat.id, `Invalid tier ${tierParam}`);
+        return;
+    }
+    const tier = tierParam.split('t')[1];
     try {
         const tree = await main(address, parseInt(level));
         const levelMap = tree.levelMap;
@@ -592,16 +573,15 @@ bot.onText(/\/lv6 (.+) (.+) (.+)/, async (msg, match) => {
 
         let message = '';
         if (!levelMap.has(level)) {
-            message += `User has 0️⃣ ref in this level. Try again later!`;
+            message += `User has 0️⃣ tier ${tier} ref in this level. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
 
-            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page, tier);
 
-            let numberRef = refCountMap.get(address);
             let userUrl = `https://explorer.zksync.io/address/${address}`;
             message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
-            message += `🔗 Level 6️⃣ ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
+            message += `🔗 Level ${level} ref - ${refCode}% discount sale - Tier ${tier} - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
 
@@ -619,7 +599,8 @@ bot.onText(/\/lv6 (.+) (.+) (.+)/, async (msg, match) => {
     }
 });
 
-bot.onText(/\/lv7 (.+) (.+) (.+)/, async (msg, match) => {
+bot.onText(/\/lv6 (.+) (.+) (.+) (.+)/, async (msg, match) => {
+    const level = getLevelFromCommand(match);
     const username = match[1].toLowerCase();
     let address = kolList[username];
     if (!address) {
@@ -635,7 +616,13 @@ bot.onText(/\/lv7 (.+) (.+) (.+)/, async (msg, match) => {
         return;
     }
     const page = parseInt(match[3]);
-    const level = '7';
+    const tierParam = match[4].toLowerCase();
+    if (!TIERS.includes(tierParam)) {
+        console.log(`invalid tier ${tierParam}`);
+        await bot.sendMessage(msg.chat.id, `Invalid tier ${tierParam}`);
+        return;
+    }
+    const tier = tierParam.split('t')[1];
     try {
         const tree = await main(address, parseInt(level));
         const levelMap = tree.levelMap;
@@ -645,16 +632,74 @@ bot.onText(/\/lv7 (.+) (.+) (.+)/, async (msg, match) => {
 
         let message = '';
         if (!levelMap.has(level)) {
-            message += `User has 0️⃣ ref in this level. Try again later!`;
+            message += `User has 0️⃣ tier ${tier} ref in this level. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
 
-            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page);
+            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page, tier);
 
-            let numberRef = refCountMap.get(address);
             let userUrl = `https://explorer.zksync.io/address/${address}`;
             message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
-            message += `🔗 Level 7️⃣ ref - ${refCode}% discount sale - (page ${page}/${numPages}):\n\n`;
+            message += `🔗 Level ${level} ref - ${refCode}% discount sale - Tier ${tier} - (page ${page}/${numPages}):\n\n`;
+
+            message += `\t\t\t\t🏷Sale transactions:\n\n`;
+
+            message += s;
+        }
+
+        const opts = {
+            parse_mode: 'HTML',
+        }
+
+        await bot.sendMessage(msg.chat.id, message, opts);
+    } catch (error) {
+        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
+        console.log(`err: ${error}`)
+    }
+});
+
+bot.onText(/\/lv7 (.+) (.+) (.+) (.+)/, async (msg, match) => {
+    const level = getLevelFromCommand(match);
+    const username = match[1].toLowerCase();
+    let address = kolList[username];
+    if (!address) {
+        address = username;
+    }
+    const refCode = match[2];
+    if (!REF_CODES.includes(refCode)) {
+        const opts = {
+            parse_mode: 'HTML',
+        }
+        const message = `Invalid ref code ${refCode}`;
+        await bot.sendMessage(msg.chat.id, message, opts);
+        return;
+    }
+    const page = parseInt(match[3]);
+    const tierParam = match[4].toLowerCase();
+    if (!TIERS.includes(tierParam)) {
+        console.log(`invalid tier ${tierParam}`);
+        await bot.sendMessage(msg.chat.id, `Invalid tier ${tierParam}`);
+        return;
+    }
+    const tier = tierParam.split('t')[1];
+    try {
+        const tree = await main(address, parseInt(level));
+        const levelMap = tree.levelMap;
+        const refCountMap = tree.refCountMap;
+        const txNodesBuyMap = tree.txNodesBuyMap;
+        const saleMap = tree.saleMap;
+
+        let message = '';
+        if (!levelMap.has(level)) {
+            message += `User has 0️⃣ tier ${tier} ref in this level. Try again later!`;
+        } else {
+            let levelContent = levelMap.get(level);
+
+            const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page, tier);
+
+            let userUrl = `https://explorer.zksync.io/address/${address}`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
+            message += `🔗 Level ${level} ref - ${refCode}% discount sale - Tier ${tier} - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
 

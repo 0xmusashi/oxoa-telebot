@@ -24,6 +24,22 @@ function formatAddress(address) {
     return address.slice(0, 4) + '...' + address.slice(-3);
 }
 
+function getLevelFromCommand(match) {
+    const s = match[0];
+    const level = s.split(' ')[0].split('lv')[1];
+    return level;
+}
+
+function getTierFromTxValueAndNumKeys(value, numKeys) {
+    let price = value / numKeys;
+    let prices = [-1.0];
+    for (const [_, value] of Object.entries(TIER_PRICE_MAP)) {
+        prices.push(value[0]);
+    }
+    let result = prices.indexOf(parseFloat(price.toFixed(4)));
+    return result;
+}
+
 function splitArrayWithOffset(arr, size, offset = 0) {
     if (!Array.isArray(arr) || size <= 0 || offset < 0) {
         throw new Error('Invalid arguments: array, size, and offset must be valid.');
@@ -44,29 +60,35 @@ function splitArrayWithOffset(arr, size, offset = 0) {
     return subarrays;
 }
 
-function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page = 1) {
+function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page = 1, tier) {
     let s2 = '';
     let allLogs = [];
     let levelKeySale = 0;
     let levelSubRef = 0;
+    let subrefSet = new Set();
     function logTxsMap(txs, user) {
         let logs = [];
         let numberRef = refCountMap.get(user);
-        levelSubRef += numberRef;
         let oxoaPercentage = 5;
+
+        const [NO_CODE_PRICE, CODE_20_PRICE, CODE_100_PRICE] = TIER_PRICE_MAP[tier];
 
         if (numberRef > 0 && txs.length > 0) {
             for (let i = 0; i < txs.length; i++) {
-                const [numNodes, ethValue, _] = txNodesBuyMap.get(txs[i]);
+                const [numNodes, ethValue, from, txTier] = txNodesBuyMap.get(txs[i]);
+                if (txTier != tier) {
+                    continue;
+                }
+                subrefSet.add(from);
                 let k = `🔑`;
                 let code = '0';
-                if (ethValue == NO_CODE_PRICE * numNodes) {
+                if (ethValue == parseFloat((NO_CODE_PRICE * numNodes).toFixed(4))) {
                     k = `🔑`;
                     code = '0';
-                } else if (ethValue == CODE_20_PRICE * numNodes) {
+                } else if (ethValue == parseFloat((CODE_20_PRICE * numNodes).toFixed(4))) {
                     k = `🗝`;
                     code = '20';
-                } else if (ethValue == CODE_100_PRICE * numNodes) {
+                } else if (ethValue == parseFloat((CODE_100_PRICE * numNodes).toFixed(4))) {
                     k = `🎁`;
                     code = '100';
                 }
@@ -105,6 +127,8 @@ function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, sale
         }
     }
 
+    levelSubRef = subrefSet.size;
+
     return [s2, numPages, levelKeySale, levelSubRef];
 }
 
@@ -123,17 +147,21 @@ function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap, ti
     levelContent.forEach((txs, user) => {
         if (txs.length > 0) {
             for (let i = 0; i < txs.length; i++) {
-                const [numNodes, txValue, from] = txNodesBuyMap.get(txs[i]);
+                const [numNodes, txValue, from, txTier] = txNodesBuyMap.get(txs[i]);
 
-                if (txValue == NO_CODE_PRICE * numNodes) {
+                if (txValue == parseFloat((NO_CODE_PRICE * numNodes).toFixed(4))) {
                     numNoCodeKeySold += numNodes;
                     refSet.add(from);
-                } else if (txValue == CODE_20_PRICE * numNodes) {
+                } else if (txValue == parseFloat((CODE_20_PRICE * numNodes).toFixed(4))) {
                     numCode20KeySold += numNodes;
                     refSet.add(from);
-                } else if (txValue == CODE_100_PRICE * numNodes) {
+                } else if (txValue == parseFloat((CODE_100_PRICE * numNodes).toFixed(4))) {
                     numCode100KeySold += numNodes;
                     refSet.add(from);
+                } else {
+                    if (txTier == tier) {
+                        console.log(`tx: ${txs[i]}`);
+                    }
                 }
             }
         }
@@ -165,7 +193,7 @@ function logReferralsListByLevel(levelContent, level, refCountMap, txNodesBuyMap
         let logs = [];
         if (txs.length > 0) {
             for (let i = 0; i < txs.length; i++) {
-                const [numKeys, txValue, from] = txNodesBuyMap.get(txs[i]);
+                const [numKeys, txValue, from, txTier] = txNodesBuyMap.get(txs[i]);
 
                 if (!refNumKeysMap.has(from)) {
                     refNumKeysMap.set(from, numKeys);
@@ -217,7 +245,7 @@ function logReferralsListByLevelNsb(levelContent, level, refCountMap, txNodesBuy
         let logs = [];
         if (txs.length > 0) {
             for (let i = 0; i < txs.length; i++) {
-                const [numKeys, txValue, from] = txNodesBuyMap.get(txs[i]);
+                const [numKeys, txValue, from, txTier] = txNodesBuyMap.get(txs[i]);
 
                 if (!refNumKeysMap.has(from)) {
                     refNumKeysMap.set(from, numKeys);
@@ -297,9 +325,11 @@ saleMapNoCode = {
 */
 
 module.exports = {
+    getLevelFromCommand,
     formatAddress,
     logGeneral,
     logPageCodeType,
     logReferralsListByLevel,
-    logReferralsListByLevelNsb
+    logReferralsListByLevelNsb,
+    getTierFromTxValueAndNumKeys
 };
