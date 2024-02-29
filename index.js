@@ -219,7 +219,7 @@ bot.onText(/\/ref (.+) (.+)/, async (msg, match) => {
     }
 });
 
-bot.onText(/\/list (.+) (.+) (.+)/, async (msg, match) => {
+bot.onText(/\/list (.+) (.+) (.+) (.+)/, async (msg, match) => {
     const username = match[1].toLowerCase();
     let address = kolList[username];
     if (!address) {
@@ -227,6 +227,13 @@ bot.onText(/\/list (.+) (.+) (.+)/, async (msg, match) => {
     }
     const level = match[2];
     const page = parseInt(match[3]);
+    const tierParam = match[4].toLowerCase();
+    if (!TIERS.includes(tierParam)) {
+        console.log(`invalid tier ${tierParam}`);
+        await bot.sendMessage(msg.chat.id, `Invalid tier ${tierParam}`);
+        return;
+    }
+    const tier = tierParam.split('t')[1];
     try {
         if (parseInt(level) < 1) {
             throw Error("level must be >= 1");
@@ -243,9 +250,9 @@ bot.onText(/\/list (.+) (.+) (.+)/, async (msg, match) => {
             message += `User has 0️⃣ ref in this level. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
-            const [s, numPages, totalRef] = logReferralsListByLevel(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page);
+            const [s, numPages, totalRef] = logReferralsListByLevel(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page, tier);
 
-            message += `🔗 <b>Level ${parseInt(level)} total ref: ${totalRef} (page ${page}/${numPages})</b>\n\n`;
+            message += `🔗 <b>Level ${parseInt(level)} - tier ${tier} - total ref: ${totalRef} (page ${page}/${numPages})</b>\n\n`;
             message += s;
         }
 
@@ -260,7 +267,7 @@ bot.onText(/\/list (.+) (.+) (.+)/, async (msg, match) => {
     }
 });
 
-bot.onText(/\/showRef (.+)/, async (msg, match) => {
+bot.onText(/\/showRef (.+) (.+) (.+)/, async (msg, match) => {
     const username = match[1].toLowerCase();
     let address = kolList[username];
     if (!address) {
@@ -271,6 +278,14 @@ bot.onText(/\/showRef (.+)/, async (msg, match) => {
         return; // Ignore messages from unauthorized users
     }
     const page = parseInt(match[2]);
+
+    const tierParam = match[3].toLowerCase();
+    if (!TIERS.includes(tierParam)) {
+        console.log(`invalid tier ${tierParam}`);
+        await bot.sendMessage(msg.chat.id, `Invalid tier ${tierParam}`);
+        return;
+    }
+    const tier = tierParam.split('t')[1];
 
     const level = '1';
     try {
@@ -286,9 +301,9 @@ bot.onText(/\/showRef (.+)/, async (msg, match) => {
             message += `User has 0️⃣ ref in this level. Try again later!`;
         } else {
             let levelContent = levelMap.get(level);
-            const [s, numPages, totalRef] = logReferralsListByLevelNsb(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page);
+            const [s, numPages, totalRef] = logReferralsListByLevelNsb(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page, tier);
 
-            message += `🔗 <b>Level ${parseInt(level)} total ref: ${totalRef}</b>\n\n`;
+            message += `🔗 <b>Level ${parseInt(level)} - tier ${tier} - total ref: ${totalRef}</b>\n\n`;
             message += s;
         }
 

@@ -183,7 +183,7 @@ function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap, ti
     return [s, numberKeySold, totalSale];
 }
 
-function logReferralsListByLevel(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page) {
+function logReferralsListByLevel(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page, tier) {
     let s = ``;
     let allLogs = [];
     let refSet = new Set();
@@ -194,6 +194,9 @@ function logReferralsListByLevel(levelContent, level, refCountMap, txNodesBuyMap
         if (txs.length > 0) {
             for (let i = 0; i < txs.length; i++) {
                 const [numKeys, txValue, from, txTier] = txNodesBuyMap.get(txs[i]);
+                if (tier != txTier) {
+                    continue;
+                }
 
                 if (!refNumKeysMap.has(from)) {
                     refNumKeysMap.set(from, numKeys);
@@ -235,7 +238,7 @@ function logReferralsListByLevel(levelContent, level, refCountMap, txNodesBuyMap
     return [s, numPages, totalRef];
 }
 
-function logReferralsListByLevelNsb(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page) {
+function logReferralsListByLevelNsb(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page, tier) {
     let s = ``;
     let allLogs = [];
     let refSet = new Set();
@@ -246,6 +249,10 @@ function logReferralsListByLevelNsb(levelContent, level, refCountMap, txNodesBuy
         if (txs.length > 0) {
             for (let i = 0; i < txs.length; i++) {
                 const [numKeys, txValue, from, txTier] = txNodesBuyMap.get(txs[i]);
+
+                if (tier != txTier) {
+                    continue;
+                }
 
                 if (!refNumKeysMap.has(from)) {
                     refNumKeysMap.set(from, numKeys);
