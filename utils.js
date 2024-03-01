@@ -24,7 +24,7 @@ function getTierFromTxValueAndNumKeys(value, numKeys) {
     for (const [_, value] of Object.entries(TIER_PRICE_MAP)) {
         prices.push(value[0]);
     }
-    let result = prices.indexOf(parseFloat(price.toFixed(4)));
+    let result = prices.indexOf(parseFloat(price.toFixed(6)));
     return result;
 }
 
@@ -65,24 +65,27 @@ function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, sale
             for (let i = 0; i < txs.length; i++) {
                 const [numNodes, ethValue, from, txTier] = txNodesBuyMap.get(txs[i]);
                 if (txTier != tier) {
+                    if (txs[i].toLowerCase() == LAST_5_TX) {
+                        oxoaPercentage = 17;
+                    }
                     continue;
                 }
                 subrefSet.add(from);
                 let k = `🔑`;
                 let code = '0';
-                if (ethValue == parseFloat((NO_CODE_PRICE * numNodes).toFixed(4))) {
+                if (ethValue == parseFloat((NO_CODE_PRICE * numNodes).toFixed(6))) {
                     k = `🔑`;
                     code = '0';
-                } else if (ethValue == parseFloat((CODE_20_PRICE * numNodes).toFixed(4))) {
+                } else if (ethValue == parseFloat((CODE_20_PRICE * numNodes).toFixed(6))) {
                     k = `🗝`;
                     code = '20';
-                } else if (ethValue == parseFloat((CODE_100_PRICE * numNodes).toFixed(4))) {
+                } else if (ethValue == parseFloat((CODE_100_PRICE * numNodes).toFixed(6))) {
                     k = `🎁`;
                     code = '100';
                 }
                 levelKeySale += numNodes;
 
-                const oxoaReward = (ethValue * oxoaPercentage / 100).toFixed(4);
+                const oxoaReward = (ethValue * oxoaPercentage / 100).toFixed(6);
                 const bonusReward = 0;
                 let log = `\t\t\t\t\t🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${numNodes} ${k} (${parseFloat(ethValue)} $ETH) | Reward ${oxoaPercentage}% (${parseFloat(oxoaReward)} $ETH) | Bonus reward (${parseFloat(bonusReward)} $ETH)</a>\n`;
 
@@ -137,13 +140,13 @@ function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap, ti
             for (let i = 0; i < txs.length; i++) {
                 const [numNodes, txValue, from, txTier] = txNodesBuyMap.get(txs[i]);
 
-                if (txValue == parseFloat((NO_CODE_PRICE * numNodes).toFixed(4))) {
+                if (txValue == parseFloat((NO_CODE_PRICE * numNodes).toFixed(6))) {
                     numNoCodeKeySold += numNodes;
                     refSet.add(from);
-                } else if (txValue == parseFloat((CODE_20_PRICE * numNodes).toFixed(4))) {
+                } else if (txValue == parseFloat((CODE_20_PRICE * numNodes).toFixed(6))) {
                     numCode20KeySold += numNodes;
                     refSet.add(from);
-                } else if (txValue == parseFloat((CODE_100_PRICE * numNodes).toFixed(4))) {
+                } else if (txValue == parseFloat((CODE_100_PRICE * numNodes).toFixed(6))) {
                     numCode100KeySold += numNodes;
                     refSet.add(from);
                 } else {
@@ -163,10 +166,10 @@ function logGeneral(levelContent, level, refCountMap, txNodesBuyMap, saleMap, ti
         totalSale = nocodeSale + code20Sale + code100Sale;
         numberKeySold += numNoCodeKeySold + numCode20KeySold + numCode100KeySold;
 
-        s += `🔗 L${parseInt(level)}: ${refSet.size} ref - ${numberKeySold} keys - Level sale: ${parseFloat(totalSale.toFixed(4))} $ETH\n\n`;
-        s += `      0 %     :   ${numNoCodeKeySold} 🔑 (${parseFloat(nocodeSale.toFixed(4))} $ETH) \n`;
-        s += `      20 %   :   ${numCode20KeySold} 🗝 (${parseFloat(code20Sale.toFixed(4))} $ETH) \n`;
-        s += `      100 % :   ${numCode100KeySold} 🎁 (${parseFloat(code100Sale.toFixed(4))} $ETH) \n\n`;
+        s += `🔗 L${parseInt(level)}: ${refSet.size} ref - ${numberKeySold} keys - Level sale: ${parseFloat(totalSale.toFixed(6))} $ETH\n\n`;
+        s += `      0 %     :   ${numNoCodeKeySold} 🔑 (${parseFloat(nocodeSale.toFixed(6))} $ETH) \n`;
+        s += `      20 %   :   ${numCode20KeySold} 🗝 (${parseFloat(code20Sale.toFixed(6))} $ETH) \n`;
+        s += `      100 % :   ${numCode100KeySold} 🎁 (${parseFloat(code100Sale.toFixed(6))} $ETH) \n\n`;
     }
     return [s, numberKeySold, totalSale];
 }
