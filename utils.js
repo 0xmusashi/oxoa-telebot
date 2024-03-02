@@ -93,8 +93,7 @@ function logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, sale
                 levelKeySale += numNodes;
 
                 const oxoaReward = (ethValue * oxoaPercentage / 100).toFixed(6);
-                const bonusReward = 0;
-                let log = `\t\t\t\t\t🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${numNodes} ${k} (${parseFloat(ethValue)} $ETH) | Reward ${oxoaPercentage}% (${parseFloat(oxoaReward)} $ETH) | Bonus reward (${parseFloat(bonusReward)} $ETH)</a>\n`;
+                let log = `\t\t\t\t\t🔸 <a href='https://explorer.zksync.io/tx/${txs[i]}'>Buy ${numNodes} ${k} (${parseFloat(ethValue)} $ETH) | Reward ${oxoaPercentage}% (${parseFloat(oxoaReward)} $ETH)</a>\n`;
 
                 if (code == refCode) {
                     logs.push(log);
@@ -359,7 +358,6 @@ function logTier(levelContent, level, refCountMap, txNodesBuyMap, saleMap, curre
             }
         }
     }
-    s += '\n\n';
     return [s, numberKeySold, totalSale];
 }
 
