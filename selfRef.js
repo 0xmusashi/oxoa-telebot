@@ -74,7 +74,7 @@ async function getSelfRefAddresses(tier) {
     }
 }
 
-// getSelfRefAddresses();
+getSelfRefAddresses('2');
 
 module.exports = {
     getSelfRefAddresses

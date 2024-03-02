@@ -6,11 +6,12 @@ const TelegramBot = require('node-telegram-bot-api');
 const {
     getLevelFromCommand,
     formatAddress,
+    getTierFromNodePrice,
     logGeneral,
     logPageCodeType,
     logReferralsListByLevel,
     logReferralsListByLevelNsb,
-    getTierFromTxValueAndNumKeys
+    logTier,
 } = require('./utils');
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
@@ -39,6 +40,7 @@ class Tree {
         this.refCountMap = new Map();
         this.txNodesBuyMap = new Map();
         this.saleMap = new Map();
+        this.currentTier = 1;
     }
 
     async preorderTraversal(node = this.root, level = 1, maxLevel = 10) {
@@ -82,6 +84,12 @@ class Tree {
             // Create a contract instance
             const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, provider);
 
+            // get current tier
+            const state = await contract._state();
+            const nodePrice = state['_nodePrice'];
+            const price = parseFloat(ethers.utils.formatUnits(nodePrice).toString());
+            this.currentTier = getTierFromNodePrice(price);
+
             const filter = {
                 address: CONTRACT_ADDRESS,
                 topics: [
@@ -108,7 +116,8 @@ class Tree {
                 let tx = await provider.getTransaction(txHash);
                 let txValue = parseFloat(ethers.utils.formatUnits(tx.value).toString());
 
-                let tier = getTierFromTxValueAndNumKeys(txValue, numberOfNodes).toString();
+                const _nodePrice = parseFloat(ethers.utils.formatUnits(args['_nodePrice']).toString());
+                let tier = getTierFromNodePrice(_nodePrice).toString();
                 this.txNodesBuyMap.set(txHash, [numberOfNodes, txValue, tx.from, tier]);
 
                 let child = new Node(owner);
@@ -204,7 +213,7 @@ bot.onText(/\/ref (.+) (.+)/, async (msg, match) => {
             totalSaleETH += saleETH;
         });
 
-        message += `💲<b>Total sale: ${totalKeys} keys (${parseFloat(totalSaleETH.toFixed(4))} $ETH)</b>\n\n`;
+        message += `💲<b>Total sale: ${totalKeys} keys (${parseFloat(totalSaleETH.toFixed(6))} $ETH)</b>\n\n`;
         message += s;
 
         const opts = {
@@ -719,6 +728,55 @@ bot.onText(/\/lv7 (.+) (.+) (.+) (.+)/, async (msg, match) => {
 
             message += s;
         }
+
+        const opts = {
+            parse_mode: 'HTML',
+        }
+
+        await bot.sendMessage(msg.chat.id, message, opts);
+    } catch (error) {
+        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
+        console.log(`err: ${error}`)
+    }
+});
+
+bot.onText(/\/checkfull (.+)/, async (msg, match) => {
+    const username = match[1].toLowerCase();
+    let address = kolList[username];
+    if (!address) {
+        address = username;
+    }
+    if (!ADMIN_IDS.includes(msg.from.id)) {
+        console.log(`unauthorized user ${msg.from.id}`);
+        return; // Ignore messages from unauthorized users
+    }
+
+    try {
+        const tree = await main(address);
+        const levelMap = tree.levelMap;
+        const refCountMap = tree.refCountMap;
+        const txNodesBuyMap = tree.txNodesBuyMap;
+        const saleMap = tree.saleMap;
+        const currentTier = tree.currentTier;
+
+        const userUrl = `https://explorer.zksync.io/address/${address}`;
+        let message = `👨 <b><a href='${userUrl}'>${formatAddress(address)}</a> Check Full Tier</b>\n\n`;
+
+        let s = ``;
+        let totalKeys = 0;
+        let totalSaleETH = 0.0;
+
+        levelMap.forEach((levelContent, level) => {
+            const [s1, numKeys, saleETH] = logTier(levelContent, level, refCountMap, txNodesBuyMap, saleMap, currentTier);
+            if (numKeys > 0) {
+                s += s1;
+                totalKeys += numKeys;
+                totalSaleETH += saleETH;
+            }
+        });
+
+        message += `💲<b>Total sale: ${totalKeys} keys (${parseFloat(totalSaleETH.toFixed(6))} $ETH)</b>\n\n`;
+        message += s;
 
         const opts = {
             parse_mode: 'HTML',

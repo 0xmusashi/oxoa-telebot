@@ -1,5 +1,3 @@
-const { getSelfRefAddresses } = require('./selfRef');
-
 const {
     TIER_PRICE_MAP,
     TXS_PER_PAGE,
@@ -10,6 +8,15 @@ const {
 
 function formatAddress(address) {
     return address.slice(0, 4) + '...' + address.slice(-3);
+}
+
+function getTierFromNodePrice(price) {
+    let prices = [-1.0];
+    for (const [_, value] of Object.entries(TIER_PRICE_MAP)) {
+        prices.push(value[0]);
+    }
+    let tier = prices.indexOf(parseFloat(price.toFixed(4)));
+    return tier;
 }
 
 function getLevelFromCommand(match) {
@@ -291,6 +298,71 @@ function logReferralsListByLevelNsb(levelContent, level, refCountMap, txNodesBuy
     return [s, numPages, totalRef];
 }
 
+function logTier(levelContent, level, refCountMap, txNodesBuyMap, saleMap, currentTier) {
+
+    const content = new Map();
+    let totalRefSet = new Set();
+    let numberKeySold = 0;
+    let totalSale = 0.0;
+
+    levelContent.forEach((txs, user) => {
+        for (let i = 0; i < txs.length; i++) {
+            const [numNodes, txValue, from, txTier] = txNodesBuyMap.get(txs[i]);
+            numberKeySold += numNodes;
+            totalSale += txValue;
+            totalRefSet.add(from);
+
+            const [NO_CODE_PRICE, CODE_20_PRICE, CODE_100_PRICE] = TIER_PRICE_MAP[txTier];
+
+            let tierContent;
+
+            if (!content.has(txTier)) {
+                let refSet = new Set();
+                refSet.add(from);
+                tierContent = {
+                    numKeys: numNodes,
+                    numNoCodeKeySold: 0,
+                    numCode20KeySold: 0,
+                    numCode100KeySold: 0,
+                    totalEth: txValue,
+                    refSet
+                };
+            } else {
+                tierContent = content.get(txTier);
+                tierContent.numKeys += numNodes;
+                tierContent.totalEth += txValue;
+                tierContent.refSet = tierContent.refSet.add(from);
+            }
+
+            if (txValue == parseFloat((NO_CODE_PRICE * numNodes).toFixed(6))) {
+                tierContent.numNoCodeKeySold += numNodes;
+            } else if (txValue == parseFloat((CODE_20_PRICE * numNodes).toFixed(6))) {
+                tierContent.numCode20KeySold += numNodes;
+            } else if (txValue == parseFloat((CODE_100_PRICE * numNodes).toFixed(6))) {
+                tierContent.numCode100KeySold += numNodes;
+            }
+
+            content.set(txTier, tierContent);
+        }
+    });
+    let s = ``;
+    s += `🔗 L${parseInt(level)}: ${totalRefSet.size} ref - ${numberKeySold} keys\n`;
+    s += `      Total sale: ${parseFloat(totalSale.toFixed(6))} $ETH\n\n`;
+    for (let tier = 1; tier <= currentTier; tier++) {
+        let tierContent = content.get(tier.toString());
+        if (tierContent) {
+            if (tier == 1) {
+                s += `\t\t\t\t\t🏁 Tier ${tier}: ${tierContent.refSet.size} ref - ${parseFloat(tierContent.totalEth.toFixed(6))} $ETH\n`
+                s += `\t\t\t\t\t   ${tierContent.numKeys} keys (${tierContent.numNoCodeKeySold} 🔑 + ${tierContent.numCode20KeySold} 🗝 + ${tierContent.numCode100KeySold} 🎁)\n\n`;
+            } else {
+                s += `\t\t\t\t\t🏁 Tier ${tier}: ${tierContent.refSet.size} ref - ${tierContent.numKeys} 🔑 - ${parseFloat(tierContent.totalEth.toFixed(6))} $ETH\n\n`;
+            }
+        }
+    }
+    s += '\n\n';
+    return [s, numberKeySold, totalSale];
+}
+
 /*
 levelMap = { 
     '0': {
@@ -329,5 +401,7 @@ module.exports = {
     logPageCodeType,
     logReferralsListByLevel,
     logReferralsListByLevelNsb,
-    getTierFromTxValueAndNumKeys
+    logTier,
+    getTierFromTxValueAndNumKeys,
+    getTierFromNodePrice
 };
