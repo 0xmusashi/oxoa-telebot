@@ -183,7 +183,7 @@ async function treeToJsonFile(inputAddress, maxLevel = 10) {
         obj.saleMap = Object.fromEntries(tree.saleMap);
         obj.currentTier = tree.currentTier;
         const jsonData = JSON.stringify(obj);
-        const filePath = `./testData/${inputAddress}.json`;
+        const filePath = `./data/${inputAddress}.json`;
         await fs.writeFile(filePath, jsonData);
     } catch (error) {
         console.log('error: ', error);
