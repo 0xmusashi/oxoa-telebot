@@ -1,3 +1,4 @@
+const fs = require('fs/promises');
 const ethers = require("ethers");
 const abi = require("./abi.json");
 const kolList = require("./kolList.json");
@@ -13,6 +14,8 @@ const {
     logReferralsListByLevelNsb,
     logTier,
 } = require('./utils');
+
+const { treeToJsonFile } = require('./sync');
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 
@@ -158,7 +161,6 @@ class Tree {
             console.error(error);
         }
     }
-
 }
 
 async function main(inputAddress, maxLevel = 10) {
@@ -174,8 +176,27 @@ async function main(inputAddress, maxLevel = 10) {
     return tree;
 }
 
+async function loadTreeFromJsonFile(inputAddress) {
+    console.log(`Referrals of ${inputAddress}`);
+    try {
+        const filePath = `./data/${inputAddress}.json`;
+        const data = await fs.readFile(filePath, 'utf8');
+        const tree = JSON.parse(data);
+        return tree;
+    } catch (error) {
+        console.log('error: ', error);
+        throw new Error("RPC call failed. Please try again");
+    }
+}
+
 bot.onText(/\/ref (.+) (.+)/, async (msg, match) => {
     const username = match[1].toLowerCase();
+    let address = kolList[username];
+    let isAddressFound = true;
+    if (!address) {
+        address = username;
+        isAddressFound = false;
+    }
     const tierParam = match[2].toLowerCase();
     if (!TIERS.includes(tierParam)) {
         console.log(`invalid tier ${tierParam}`);
@@ -183,17 +204,32 @@ bot.onText(/\/ref (.+) (.+)/, async (msg, match) => {
         return;
     }
     const tier = tierParam.split('t')[1];
-    let address = kolList[username];
-    if (!address) {
-        address = username;
-    }
     if (!ADMIN_IDS.includes(msg.from.id)) {
         console.log(`unauthorized user ${msg.from.id}`);
         await bot.sendMessage(msg.chat.id, `You are unauthorized to call this`);
         return; // Ignore messages from unauthorized users
     }
     try {
-        const tree = await main(address);
+        // const tree = await main(address);
+        let tree;
+        if (isAddressFound) {
+            tree = await loadTreeFromJsonFile(address.toLowerCase());
+            const levelMap = new Map(Object.entries(tree.levelMap));
+            levelMap.forEach((levelContent, level) => {
+                levelMap.set(level, new Map(Object.entries(levelContent)));
+            });
+            const refCountMap = new Map(Object.entries(tree.refCountMap));
+            const txNodesBuyMap = new Map(Object.entries(tree.txNodesBuyMap));
+            const saleMap = new Map(Object.entries(tree.saleMap));
+
+            tree.levelMap = levelMap;
+            tree.refCountMap = refCountMap;
+            tree.txNodesBuyMap = txNodesBuyMap;
+            tree.saleMap = saleMap;
+
+        } else {
+            tree = await main(address);
+        }
         const levelMap = tree.levelMap;
         const refCountMap = tree.refCountMap;
         const txNodesBuyMap = tree.txNodesBuyMap;
@@ -230,8 +266,10 @@ bot.onText(/\/ref (.+) (.+)/, async (msg, match) => {
 bot.onText(/\/list (.+) (.+) (.+) (.+)/, async (msg, match) => {
     const username = match[1].toLowerCase();
     let address = kolList[username];
+    let isAddressFound = true;
     if (!address) {
         address = username;
+        isAddressFound = false;
     }
     const level = match[2];
     const page = parseInt(match[3]);
@@ -246,7 +284,26 @@ bot.onText(/\/list (.+) (.+) (.+) (.+)/, async (msg, match) => {
         if (parseInt(level) < 1) {
             throw Error("level must be >= 1");
         }
-        const tree = await main(address, parseInt(level));
+        // const tree = await main(address, parseInt(level));
+        let tree;
+        if (isAddressFound) {
+            tree = await loadTreeFromJsonFile(address.toLowerCase());
+            const levelMap = new Map(Object.entries(tree.levelMap));
+            levelMap.forEach((levelContent, level) => {
+                levelMap.set(level, new Map(Object.entries(levelContent)));
+            });
+            const refCountMap = new Map(Object.entries(tree.refCountMap));
+            const txNodesBuyMap = new Map(Object.entries(tree.txNodesBuyMap));
+            const saleMap = new Map(Object.entries(tree.saleMap));
+
+            tree.levelMap = levelMap;
+            tree.refCountMap = refCountMap;
+            tree.txNodesBuyMap = txNodesBuyMap;
+            tree.saleMap = saleMap;
+
+        } else {
+            tree = await main(address, parseInt(level));
+        }
         const levelMap = tree.levelMap;
         const refCountMap = tree.refCountMap;
         const txNodesBuyMap = tree.txNodesBuyMap;
@@ -278,8 +335,10 @@ bot.onText(/\/list (.+) (.+) (.+) (.+)/, async (msg, match) => {
 bot.onText(/\/showRef (.+) (.+) (.+)/, async (msg, match) => {
     const username = match[1].toLowerCase();
     let address = kolList[username];
+    let isAddressFound = true;
     if (!address) {
         address = username;
+        isAddressFound = false;
     }
     if (!ADMIN_IDS.includes(msg.from.id)) {
         console.log(`unauthorized user ${msg.from.id}`);
@@ -297,7 +356,26 @@ bot.onText(/\/showRef (.+) (.+) (.+)/, async (msg, match) => {
 
     const level = '1';
     try {
-        const tree = await main(address, parseInt(level) + 1);
+        // const tree = await main(address, parseInt(level) + 1);
+        let tree;
+        if (isAddressFound) {
+            tree = await loadTreeFromJsonFile(address.toLowerCase());
+            const levelMap = new Map(Object.entries(tree.levelMap));
+            levelMap.forEach((levelContent, level) => {
+                levelMap.set(level, new Map(Object.entries(levelContent)));
+            });
+            const refCountMap = new Map(Object.entries(tree.refCountMap));
+            const txNodesBuyMap = new Map(Object.entries(tree.txNodesBuyMap));
+            const saleMap = new Map(Object.entries(tree.saleMap));
+
+            tree.levelMap = levelMap;
+            tree.refCountMap = refCountMap;
+            tree.txNodesBuyMap = txNodesBuyMap;
+            tree.saleMap = saleMap;
+
+        } else {
+            tree = await main(address, parseInt(level) + 1);
+        }
         const levelMap = tree.levelMap;
         const refCountMap = tree.refCountMap;
         const txNodesBuyMap = tree.txNodesBuyMap;
@@ -311,7 +389,7 @@ bot.onText(/\/showRef (.+) (.+) (.+)/, async (msg, match) => {
             let levelContent = levelMap.get(level);
             const [s, numPages, totalRef] = logReferralsListByLevelNsb(levelContent, level, refCountMap, txNodesBuyMap, saleMap, page, tier);
 
-            message += `🔗 <b>Level ${parseInt(level)} - tier ${tier} - total ref: ${totalRef}</b>\n\n`;
+            message += `🔗 <b>Level ${parseInt(level)} - tier ${tier} - total ref: ${totalRef} (page ${page}/${numPages})</b>\n\n`;
             message += s;
         }
 
@@ -330,8 +408,10 @@ bot.onText(/\/lv1 (.+) (.+) (.+) (.+)/, async (msg, match) => {
     const level = getLevelFromCommand(match);
     const username = match[1].toLowerCase();
     let address = kolList[username];
+    let isAddressFound = true;
     if (!address) {
         address = username;
+        isAddressFound = false;
     }
     const refCode = match[2];
     if (!REF_CODES.includes(refCode)) {
@@ -351,7 +431,28 @@ bot.onText(/\/lv1 (.+) (.+) (.+) (.+)/, async (msg, match) => {
     }
     const tier = tierParam.split('t')[1];
     try {
-        const tree = await main(address, parseInt(level));
+        // const tree = await main(address, parseInt(level));
+
+        let tree;
+        if (isAddressFound) {
+            tree = await loadTreeFromJsonFile(address.toLowerCase());
+            const levelMap = new Map(Object.entries(tree.levelMap));
+            levelMap.forEach((levelContent, level) => {
+                levelMap.set(level, new Map(Object.entries(levelContent)));
+            });
+            const refCountMap = new Map(Object.entries(tree.refCountMap));
+            const txNodesBuyMap = new Map(Object.entries(tree.txNodesBuyMap));
+            const saleMap = new Map(Object.entries(tree.saleMap));
+
+            tree.levelMap = levelMap;
+            tree.refCountMap = refCountMap;
+            tree.txNodesBuyMap = txNodesBuyMap;
+            tree.saleMap = saleMap;
+
+        } else {
+            tree = await main(address, parseInt(level));
+        }
+
         const levelMap = tree.levelMap;
         const refCountMap = tree.refCountMap;
         const txNodesBuyMap = tree.txNodesBuyMap;
@@ -365,10 +466,9 @@ bot.onText(/\/lv1 (.+) (.+) (.+) (.+)/, async (msg, match) => {
 
             const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page, tier);
 
-            let numberRef = refCountMap.get(address);
             let userUrl = `https://explorer.zksync.io/address/${address}`;
             message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} direct ref\n\n`;
-            message += `🔗 Direct ref - ${refCode}% discount sale - Tier ${tier} - (page ${page}/${numPages}):\n\n`;
+            message += `🔗 Level ${level} ref - ${refCode}% discount sale - Tier ${tier} - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
 
@@ -390,8 +490,10 @@ bot.onText(/\/lv2 (.+) (.+) (.+) (.+)/, async (msg, match) => {
     const level = getLevelFromCommand(match);
     const username = match[1].toLowerCase();
     let address = kolList[username];
+    let isAddressFound = true;
     if (!address) {
         address = username;
+        isAddressFound = false;
     }
     const refCode = match[2];
     if (!REF_CODES.includes(refCode)) {
@@ -411,7 +513,28 @@ bot.onText(/\/lv2 (.+) (.+) (.+) (.+)/, async (msg, match) => {
     }
     const tier = tierParam.split('t')[1];
     try {
-        const tree = await main(address, parseInt(level));
+        // const tree = await main(address, parseInt(level));
+
+        let tree;
+        if (isAddressFound) {
+            tree = await loadTreeFromJsonFile(address.toLowerCase());
+            const levelMap = new Map(Object.entries(tree.levelMap));
+            levelMap.forEach((levelContent, level) => {
+                levelMap.set(level, new Map(Object.entries(levelContent)));
+            });
+            const refCountMap = new Map(Object.entries(tree.refCountMap));
+            const txNodesBuyMap = new Map(Object.entries(tree.txNodesBuyMap));
+            const saleMap = new Map(Object.entries(tree.saleMap));
+
+            tree.levelMap = levelMap;
+            tree.refCountMap = refCountMap;
+            tree.txNodesBuyMap = txNodesBuyMap;
+            tree.saleMap = saleMap;
+
+        } else {
+            tree = await main(address, parseInt(level));
+        }
+
         const levelMap = tree.levelMap;
         const refCountMap = tree.refCountMap;
         const txNodesBuyMap = tree.txNodesBuyMap;
@@ -426,7 +549,7 @@ bot.onText(/\/lv2 (.+) (.+) (.+) (.+)/, async (msg, match) => {
             const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page, tier);
 
             let userUrl = `https://explorer.zksync.io/address/${address}`;
-            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} direct ref\n\n`;
             message += `🔗 Level ${level} ref - ${refCode}% discount sale - Tier ${tier} - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
@@ -449,8 +572,10 @@ bot.onText(/\/lv3 (.+) (.+) (.+) (.+)/, async (msg, match) => {
     const level = getLevelFromCommand(match);
     const username = match[1].toLowerCase();
     let address = kolList[username];
+    let isAddressFound = true;
     if (!address) {
         address = username;
+        isAddressFound = false;
     }
     const refCode = match[2];
     if (!REF_CODES.includes(refCode)) {
@@ -470,7 +595,28 @@ bot.onText(/\/lv3 (.+) (.+) (.+) (.+)/, async (msg, match) => {
     }
     const tier = tierParam.split('t')[1];
     try {
-        const tree = await main(address, parseInt(level));
+        // const tree = await main(address, parseInt(level));
+
+        let tree;
+        if (isAddressFound) {
+            tree = await loadTreeFromJsonFile(address.toLowerCase());
+            const levelMap = new Map(Object.entries(tree.levelMap));
+            levelMap.forEach((levelContent, level) => {
+                levelMap.set(level, new Map(Object.entries(levelContent)));
+            });
+            const refCountMap = new Map(Object.entries(tree.refCountMap));
+            const txNodesBuyMap = new Map(Object.entries(tree.txNodesBuyMap));
+            const saleMap = new Map(Object.entries(tree.saleMap));
+
+            tree.levelMap = levelMap;
+            tree.refCountMap = refCountMap;
+            tree.txNodesBuyMap = txNodesBuyMap;
+            tree.saleMap = saleMap;
+
+        } else {
+            tree = await main(address, parseInt(level));
+        }
+
         const levelMap = tree.levelMap;
         const refCountMap = tree.refCountMap;
         const txNodesBuyMap = tree.txNodesBuyMap;
@@ -485,7 +631,7 @@ bot.onText(/\/lv3 (.+) (.+) (.+) (.+)/, async (msg, match) => {
             const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page, tier);
 
             let userUrl = `https://explorer.zksync.io/address/${address}`;
-            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} direct ref\n\n`;
             message += `🔗 Level ${level} ref - ${refCode}% discount sale - Tier ${tier} - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
@@ -508,8 +654,10 @@ bot.onText(/\/lv4 (.+) (.+) (.+) (.+)/, async (msg, match) => {
     const level = getLevelFromCommand(match);
     const username = match[1].toLowerCase();
     let address = kolList[username];
+    let isAddressFound = true;
     if (!address) {
         address = username;
+        isAddressFound = false;
     }
     const refCode = match[2];
     if (!REF_CODES.includes(refCode)) {
@@ -529,7 +677,28 @@ bot.onText(/\/lv4 (.+) (.+) (.+) (.+)/, async (msg, match) => {
     }
     const tier = tierParam.split('t')[1];
     try {
-        const tree = await main(address, parseInt(level));
+        // const tree = await main(address, parseInt(level));
+
+        let tree;
+        if (isAddressFound) {
+            tree = await loadTreeFromJsonFile(address.toLowerCase());
+            const levelMap = new Map(Object.entries(tree.levelMap));
+            levelMap.forEach((levelContent, level) => {
+                levelMap.set(level, new Map(Object.entries(levelContent)));
+            });
+            const refCountMap = new Map(Object.entries(tree.refCountMap));
+            const txNodesBuyMap = new Map(Object.entries(tree.txNodesBuyMap));
+            const saleMap = new Map(Object.entries(tree.saleMap));
+
+            tree.levelMap = levelMap;
+            tree.refCountMap = refCountMap;
+            tree.txNodesBuyMap = txNodesBuyMap;
+            tree.saleMap = saleMap;
+
+        } else {
+            tree = await main(address, parseInt(level));
+        }
+
         const levelMap = tree.levelMap;
         const refCountMap = tree.refCountMap;
         const txNodesBuyMap = tree.txNodesBuyMap;
@@ -544,7 +713,7 @@ bot.onText(/\/lv4 (.+) (.+) (.+) (.+)/, async (msg, match) => {
             const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page, tier);
 
             let userUrl = `https://explorer.zksync.io/address/${address}`;
-            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} direct ref\n\n`;
             message += `🔗 Level ${level} ref - ${refCode}% discount sale - Tier ${tier} - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
@@ -567,8 +736,10 @@ bot.onText(/\/lv5 (.+) (.+) (.+) (.+)/, async (msg, match) => {
     const level = getLevelFromCommand(match);
     const username = match[1].toLowerCase();
     let address = kolList[username];
+    let isAddressFound = true;
     if (!address) {
         address = username;
+        isAddressFound = false;
     }
     const refCode = match[2];
     if (!REF_CODES.includes(refCode)) {
@@ -588,7 +759,28 @@ bot.onText(/\/lv5 (.+) (.+) (.+) (.+)/, async (msg, match) => {
     }
     const tier = tierParam.split('t')[1];
     try {
-        const tree = await main(address, parseInt(level));
+        // const tree = await main(address, parseInt(level));
+
+        let tree;
+        if (isAddressFound) {
+            tree = await loadTreeFromJsonFile(address.toLowerCase());
+            const levelMap = new Map(Object.entries(tree.levelMap));
+            levelMap.forEach((levelContent, level) => {
+                levelMap.set(level, new Map(Object.entries(levelContent)));
+            });
+            const refCountMap = new Map(Object.entries(tree.refCountMap));
+            const txNodesBuyMap = new Map(Object.entries(tree.txNodesBuyMap));
+            const saleMap = new Map(Object.entries(tree.saleMap));
+
+            tree.levelMap = levelMap;
+            tree.refCountMap = refCountMap;
+            tree.txNodesBuyMap = txNodesBuyMap;
+            tree.saleMap = saleMap;
+
+        } else {
+            tree = await main(address, parseInt(level));
+        }
+
         const levelMap = tree.levelMap;
         const refCountMap = tree.refCountMap;
         const txNodesBuyMap = tree.txNodesBuyMap;
@@ -603,7 +795,7 @@ bot.onText(/\/lv5 (.+) (.+) (.+) (.+)/, async (msg, match) => {
             const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page, tier);
 
             let userUrl = `https://explorer.zksync.io/address/${address}`;
-            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} direct ref\n\n`;
             message += `🔗 Level ${level} ref - ${refCode}% discount sale - Tier ${tier} - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
@@ -626,8 +818,10 @@ bot.onText(/\/lv6 (.+) (.+) (.+) (.+)/, async (msg, match) => {
     const level = getLevelFromCommand(match);
     const username = match[1].toLowerCase();
     let address = kolList[username];
+    let isAddressFound = true;
     if (!address) {
         address = username;
+        isAddressFound = false;
     }
     const refCode = match[2];
     if (!REF_CODES.includes(refCode)) {
@@ -647,7 +841,28 @@ bot.onText(/\/lv6 (.+) (.+) (.+) (.+)/, async (msg, match) => {
     }
     const tier = tierParam.split('t')[1];
     try {
-        const tree = await main(address, parseInt(level));
+        // const tree = await main(address, parseInt(level));
+
+        let tree;
+        if (isAddressFound) {
+            tree = await loadTreeFromJsonFile(address.toLowerCase());
+            const levelMap = new Map(Object.entries(tree.levelMap));
+            levelMap.forEach((levelContent, level) => {
+                levelMap.set(level, new Map(Object.entries(levelContent)));
+            });
+            const refCountMap = new Map(Object.entries(tree.refCountMap));
+            const txNodesBuyMap = new Map(Object.entries(tree.txNodesBuyMap));
+            const saleMap = new Map(Object.entries(tree.saleMap));
+
+            tree.levelMap = levelMap;
+            tree.refCountMap = refCountMap;
+            tree.txNodesBuyMap = txNodesBuyMap;
+            tree.saleMap = saleMap;
+
+        } else {
+            tree = await main(address, parseInt(level));
+        }
+
         const levelMap = tree.levelMap;
         const refCountMap = tree.refCountMap;
         const txNodesBuyMap = tree.txNodesBuyMap;
@@ -662,7 +877,7 @@ bot.onText(/\/lv6 (.+) (.+) (.+) (.+)/, async (msg, match) => {
             const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page, tier);
 
             let userUrl = `https://explorer.zksync.io/address/${address}`;
-            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} direct ref\n\n`;
             message += `🔗 Level ${level} ref - ${refCode}% discount sale - Tier ${tier} - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
@@ -685,8 +900,10 @@ bot.onText(/\/lv7 (.+) (.+) (.+) (.+)/, async (msg, match) => {
     const level = getLevelFromCommand(match);
     const username = match[1].toLowerCase();
     let address = kolList[username];
+    let isAddressFound = true;
     if (!address) {
         address = username;
+        isAddressFound = false;
     }
     const refCode = match[2];
     if (!REF_CODES.includes(refCode)) {
@@ -706,7 +923,28 @@ bot.onText(/\/lv7 (.+) (.+) (.+) (.+)/, async (msg, match) => {
     }
     const tier = tierParam.split('t')[1];
     try {
-        const tree = await main(address, parseInt(level));
+        // const tree = await main(address, parseInt(level));
+
+        let tree;
+        if (isAddressFound) {
+            tree = await loadTreeFromJsonFile(address.toLowerCase());
+            const levelMap = new Map(Object.entries(tree.levelMap));
+            levelMap.forEach((levelContent, level) => {
+                levelMap.set(level, new Map(Object.entries(levelContent)));
+            });
+            const refCountMap = new Map(Object.entries(tree.refCountMap));
+            const txNodesBuyMap = new Map(Object.entries(tree.txNodesBuyMap));
+            const saleMap = new Map(Object.entries(tree.saleMap));
+
+            tree.levelMap = levelMap;
+            tree.refCountMap = refCountMap;
+            tree.txNodesBuyMap = txNodesBuyMap;
+            tree.saleMap = saleMap;
+
+        } else {
+            tree = await main(address, parseInt(level));
+        }
+
         const levelMap = tree.levelMap;
         const refCountMap = tree.refCountMap;
         const txNodesBuyMap = tree.txNodesBuyMap;
@@ -721,7 +959,7 @@ bot.onText(/\/lv7 (.+) (.+) (.+) (.+)/, async (msg, match) => {
             const [s, numPages, levelKeySale, levelSubRef] = logPageCodeType(levelContent, refCode, refCountMap, txNodesBuyMap, saleMap, page, tier);
 
             let userUrl = `https://explorer.zksync.io/address/${address}`;
-            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} ref\n\n`;
+            message += `👨 <a href='${userUrl}'>${formatAddress(address)}</a> sold ${levelKeySale} 🔑 & ${levelSubRef} direct ref\n\n`;
             message += `🔗 Level ${level} ref - ${refCode}% discount sale - Tier ${tier} - (page ${page}/${numPages}):\n\n`;
 
             message += `\t\t\t\t🏷Sale transactions:\n\n`;
@@ -743,8 +981,10 @@ bot.onText(/\/lv7 (.+) (.+) (.+) (.+)/, async (msg, match) => {
 bot.onText(/\/checkfull (.+)/, async (msg, match) => {
     const username = match[1].toLowerCase();
     let address = kolList[username];
+    let isAddressFound = true;
     if (!address) {
         address = username;
+        isAddressFound = false;
     }
     if (!ADMIN_IDS.includes(msg.from.id)) {
         console.log(`unauthorized user ${msg.from.id}`);
@@ -752,7 +992,26 @@ bot.onText(/\/checkfull (.+)/, async (msg, match) => {
     }
 
     try {
-        const tree = await main(address);
+        // const tree = await main(address);
+        let tree;
+        if (isAddressFound) {
+            tree = await loadTreeFromJsonFile(address.toLowerCase());
+            const levelMap = new Map(Object.entries(tree.levelMap));
+            levelMap.forEach((levelContent, level) => {
+                levelMap.set(level, new Map(Object.entries(levelContent)));
+            });
+            const refCountMap = new Map(Object.entries(tree.refCountMap));
+            const txNodesBuyMap = new Map(Object.entries(tree.txNodesBuyMap));
+            const saleMap = new Map(Object.entries(tree.saleMap));
+
+            tree.levelMap = levelMap;
+            tree.refCountMap = refCountMap;
+            tree.txNodesBuyMap = txNodesBuyMap;
+            tree.saleMap = saleMap;
+
+        } else {
+            tree = await main(address);
+        }
         const levelMap = tree.levelMap;
         const refCountMap = tree.refCountMap;
         const txNodesBuyMap = tree.txNodesBuyMap;
@@ -786,5 +1045,24 @@ bot.onText(/\/checkfull (.+)/, async (msg, match) => {
     } catch (error) {
         await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
         console.log(`err: ${error}`)
+    }
+});
+
+bot.onText(/\/save (.+)/, async (msg, match) => {
+    const username = match[1].toLowerCase();
+    let address = kolList[username];
+    if (!address) {
+        address = username;
+    }
+    if (!ADMIN_IDS.includes(msg.from.id)) {
+        console.log(`unauthorized user ${msg.from.id}`);
+        return; // Ignore messages from unauthorized users
+    }
+    try {
+        await treeToJsonFile(address);
+        await bot.sendMessage(msg.chat.id, 'Saved');
+    } catch (err) {
+        await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
+        console.log(`err: ${err}`)
     }
 });
