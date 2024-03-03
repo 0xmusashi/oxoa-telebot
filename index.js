@@ -1059,7 +1059,7 @@ bot.onText(/\/save (.+)/, async (msg, match) => {
         return; // Ignore messages from unauthorized users
     }
     try {
-        await treeToJsonFile(address);
+        await treeToJsonFile(address.toLowerCase());
         await bot.sendMessage(msg.chat.id, 'Saved');
     } catch (err) {
         await bot.sendMessage(msg.chat.id, 'Error. Please try again later.');
