@@ -63,7 +63,7 @@ class Tree {
         if (!parent) {
             throw new Error("Parent node cannot be null");
         }
-        if (parent.address != child.address) {
+        if (parent.address.toLowerCase() != child.address.toLowerCase()) {
             parent.children.unshift(child); // Insert child at the beginning for pre-order
             child.children.forEach(grandchild => this.preOrderInsert(child, grandchild));
         }
