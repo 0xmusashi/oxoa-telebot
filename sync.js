@@ -1,6 +1,5 @@
 const fs = require('fs/promises');
 const ethers = require("ethers");
-const schedule = require('node-schedule');
 
 const abi = require("./abi.json");
 const kolList = require("./kolList.json");
@@ -203,7 +202,4 @@ async function sync() {
     }
 }
 
-// sync every 45 minutes
-const job = schedule.scheduleJob('*/45 * * * *', sync);
-
-sync();
+module.exports = { treeToJsonFile }
